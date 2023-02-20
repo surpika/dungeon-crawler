@@ -34,7 +34,7 @@ export class Assignment3 extends Scene {
             //        (Requirement 4)
         }
 
-        this.initial_camera_location = Mat4.look_at(vec3(0, 10, 20), vec3(0, 0, 0), vec3(0, 1, 0));
+        this.initial_camera_location = Mat4.look_at(vec3(14, 14, 1), vec3(15, 15, 1), vec3(0, 0, 1));
     }
 
     make_control_panel() {
@@ -71,7 +71,7 @@ export class Assignment3 extends Scene {
         // this.shapes.[XXX].draw([XXX]) // <--example
 
         // TODO: Lighting (Requirement 2)
-        const light_position = vec4(14, 14, 0, 1);
+        const light_position = vec4(14, 14, 1, 1);
         // The parameters of the Light are: position, color, size
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
 
@@ -94,7 +94,6 @@ export class Assignment3 extends Scene {
 				if(code.charAt(0) == '1') {
 					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,-1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
 				if(code.charAt(1) == '1') {
-					console.log("drawing left");
 					this.drawSquare(context, program_state, ij_transform, Mat4.translation(-1,0,1), Mat4.rotation(Math.PI/2,0,1,0), pink);}
 				if(code.charAt(2) == '1') {
 					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
