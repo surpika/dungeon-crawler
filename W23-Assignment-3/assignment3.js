@@ -71,7 +71,7 @@ export class Assignment3 extends Scene {
         // this.shapes.[XXX].draw([XXX]) // <--example
 
         // TODO: Lighting (Requirement 2)
-        const light_position = vec4(0, 5, 5, 1);
+        const light_position = vec4(14, 14, 0, 1);
         // The parameters of the Light are: position, color, size
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
 
@@ -90,22 +90,15 @@ export class Assignment3 extends Scene {
 				else {
 					this.shapes.square.draw(context, program_state, ij_transform, this.materials.test.override({color: green}));}
 				let code = this.proc_gen.tiles[i][j];
-				console.log("****");
-				console.log(code);
 				if(code == '1111') {continue;}
 				if(code.charAt(0) == '1') {
-					console.log("drawing top");
-					//this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
 					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,-1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
 				if(code.charAt(1) == '1') {
 					console.log("drawing left");
 					this.drawSquare(context, program_state, ij_transform, Mat4.translation(-1,0,1), Mat4.rotation(Math.PI/2,0,1,0), pink);}
 				if(code.charAt(2) == '1') {
-					console.log("drawing bottom");
-					//this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,-1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
 					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
 				if(code.charAt(3) == '1') {
-					console.log("drawing right");
 					this.drawSquare(context, program_state, ij_transform, Mat4.translation(1,0,1), Mat4.rotation(Math.PI/2,0,1,0), pink);}	
 			}
 		}
