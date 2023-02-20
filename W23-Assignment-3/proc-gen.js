@@ -33,15 +33,15 @@ const Proc_Gen =
 			}
 			
 			console.log([0, 1, 0, 1].join('') === '0101');
-			for (let i = 3; i < 12; i++) {
-				for(let j = 3; j < 12; j++) {
+			for (let i = 0; i < 15; i++) {
+				for(let j = 0; j < 15; j++) {
 					if(this.map[i][j] == empty) {
 						this.tiles[i][j] = 
 						[
-							+(this.map[i-1][j] == wall),
-							+(this.map[i][j-1] == wall),
-							+(this.map[i+1][j] == wall),
-							+(this.map[i][j+1] == wall)
+							+((i == 0) || this.map[i-1][j] == wall),
+							+((j == 0) || this.map[i][j-1] == wall),
+							+((i == 14) || this.map[i+1][j] == wall),
+							+((j == 14) || this.map[i][j+1] == wall)
 						].join(''); //write array in string format, e.g. '0101'
 					}
 				}
