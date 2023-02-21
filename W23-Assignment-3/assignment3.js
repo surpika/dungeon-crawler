@@ -1,5 +1,6 @@
 import {defs, tiny} from './examples/common.js';
 import Proc_Gen from './proc-gen.js';
+import {map_width, map_height} from './proc-gen.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene,
@@ -34,7 +35,7 @@ export class Assignment3 extends Scene {
             //        (Requirement 4)
         }
 
-        this.initial_camera_location = Mat4.look_at(vec3(14, 14, 1), vec3(15, 15, 1), vec3(0, 0, 1));
+        this.initial_camera_location = Mat4.look_at(vec3(map_width - 1, map_height - 1, 1), vec3(map_width, map_height, 1), vec3(0, 0, 1));
     }
 
     make_control_panel() {
@@ -71,7 +72,7 @@ export class Assignment3 extends Scene {
         // this.shapes.[XXX].draw([XXX]) // <--example
 
         // TODO: Lighting (Requirement 2)
-        const light_position = vec4(14, 14, 1, 1);
+        const light_position = vec4(map_width - 1, map_height - 1, 1, 1);
         // The parameters of the Light are: position, color, size
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
 
@@ -82,8 +83,8 @@ export class Assignment3 extends Scene {
 		const green = hex_color("#3ec64b");
         let model_transform = Mat4.identity();
 
-		for(let i = 0; i < 15; i++) {
-			for(let j = 0; j < 15; j++) {
+		for(let i = 0; i < map_width; i++) {
+			for(let j = 0; j < map_height; j++) {
 				let ij_transform = Mat4.identity().times(Mat4.translation(j*2, i*2, 0));
 				if(this.proc_gen.map[i][j] == 1) {
 					this.shapes.square.draw(context, program_state, ij_transform, this.materials.test.override({color: yellow}));}
