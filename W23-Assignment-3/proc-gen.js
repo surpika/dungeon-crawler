@@ -1,8 +1,8 @@
 const wall = 1;
 const empty = 0;
 
-const map_width = 2; // minimum 2, recommended under 30
-const map_height = 2; // minimum 2, recommended under 30
+const map_width = 15; // minimum 2, recommended under 30
+const map_height = 15; // minimum 2, recommended under 30
 
 const Proc_Gen =
 	class Proc_Gen {
