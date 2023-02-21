@@ -10,7 +10,6 @@ const Proc_Gen =
 			this.map = [];
 			this.tiles = [];
 			this.generate_map();
-			console.log("testing");
 		}
 		
 		generate_map() {
@@ -24,8 +23,6 @@ const Proc_Gen =
 			for(let i = Math.floor(map_width/2) -1; i < Math.ceil(map_width/2) + 1; i++) {
 				for(let j = Math.floor(map_height/2) -1; j < Math.ceil(map_height/2) + 1; j++) {
 					this.map[i][j] = empty
-					console.log("i", i);
-					console.log("j", j);
 				}
 			}
 			
