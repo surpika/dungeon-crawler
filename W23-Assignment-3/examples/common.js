@@ -820,9 +820,11 @@ const Movement_Controls = defs.Movement_Controls =
                 radians_per_frame: 1 / 200, meters_per_frame: 20, speed_multiplier: 1
             };
             Object.assign(this, data_members);
-
             this.mouse_enabled_canvases = new Set();
             this.will_take_over_graphics_state = true;
+
+            this.rotInt = 0;
+
         }
 
         set_recipient(matrix_closure, inverse_closure) {
@@ -881,7 +883,10 @@ const Movement_Controls = defs.Movement_Controls =
 
             this.key_triggered_button("Up", [" "], () => this.thrust[1] = -1, undefined, () => this.thrust[1] = 0);
             this.key_triggered_button("Forward", ["w"], () => this.thrust[2] = 1, undefined, () => this.thrust[2] = 0);
+            this.new_line()
+            this.key_triggered_button("Forward", ["ArrowUp"], () => this.thrust[2] = .5, undefined, () => this.thrust[2] = 0);
             this.new_line();
+            this.key_triggered_button("Back", ["ArrowDown"], () => this.thrust[2] = -.5, undefined, () => this.thrust[2] = 0);
             this.key_triggered_button("Left", ["a"], () => this.thrust[0] = 1, undefined, () => this.thrust[0] = 0);
             this.key_triggered_button("Back", ["s"], () => this.thrust[2] = -1, undefined, () => this.thrust[2] = 0);
             this.key_triggered_button("Right", ["d"], () => this.thrust[0] = -1, undefined, () => this.thrust[0] = 0);
@@ -932,6 +937,16 @@ const Movement_Controls = defs.Movement_Controls =
                     this.will_take_over_graphics_state = true
                 }, "#8B8885");
             this.new_line();
+            this.key_triggered_button("Rotate counter clockwise", ["ArrowLeft"], () => {
+                this.rotInt = -1;
+            }, undefined, () => {
+                this.rotInt = 0;
+            });
+            this.key_triggered_button("Rotate clockwise", ["ArrowRight"], () => {
+                this.rotInt = 1;
+            }, undefined, () => {
+                this.rotInt = 0;
+            });
         }
 
         first_person_flyaround(radians_per_frame, meters_per_frame, leeway = 70) {
@@ -978,6 +993,12 @@ const Movement_Controls = defs.Movement_Controls =
             this.inverse().pre_multiply(Mat4.translation(0, 0, -25));
         }
 
+        rotate_camera() {
+            const rotation = Mat4.rotation( this.rotInt*Math.PI / 50,
+                0, 1, 0);
+            this.matrix().post_multiply(rotation);
+            this.inverse().pre_multiply(rotation);
+        }
         display(context, graphics_state, dt = graphics_state.animation_delta_time / 1000) {
             // The whole process of acting upon controls begins here.
             const m = this.speed_multiplier * this.meters_per_frame,
@@ -1000,6 +1021,8 @@ const Movement_Controls = defs.Movement_Controls =
             // Log some values:
             this.pos = this.inverse().times(vec4(0, 0, 0, 1));
             this.z_axis = this.inverse().times(vec4(0, 0, 1, 0));
+
+            this.rotate_camera()
         }
     }
 

@@ -21,6 +21,7 @@ export class Assignment3 extends Scene {
             circle: new defs.Regular_2D_Polygon(1, 15),
 			square: new defs.Square(),
             cube: new defs.Cube(),
+            cylinder: new defs.Capped_Cylinder(15, 15),
             // TODO:  Fill in as many additional shape instances as needed in this key/value table.
             //        (Requirement 1)
         };
@@ -85,19 +86,26 @@ export class Assignment3 extends Scene {
         });
     }
 
-    draw_box(context, program_state, model_transform, box_color) {
+    draw_cylinder(context, program_state, model_transform, box_color) {
 
-        this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color:box_color}));
 
+        this.shapes.cylinder.draw(context, program_state, model_transform, this.materials.test.override({color:box_color}));
         return model_transform;
     }
 
-    box_movement(boxTransform) {
+    cylinder_movement(program_state, cylinderTransform) {
         let dx = this.udSpeed * Math.sin(this.angle);
         let dy = this.udSpeed * Math.cos(this.angle);
-        boxTransform = boxTransform.times(Mat4.rotation(this.angle, 0, 0, 1))
-        boxTransform = boxTransform.times(Mat4.translation(dx, dy, 0));
-        return boxTransform;
+        cylinderTransform = cylinderTransform.times(Mat4.rotation(this.angle, 0, 0, 1));
+        cylinderTransform = cylinderTransform.times(Mat4.translation(dx, dy, 0));
+
+        /*this.initial_camera_location = Mat4.look_at(
+            vec3(boxTransform[0], boxTransform[1], 1),
+            vec3(14, 23,1),
+            vec3(0,0,1));*/
+        //program_state.set_camera(this.initial_camera_location);
+
+        return cylinderTransform;
     }
 	drawSquare(context, program_state, transform, translation, rotation, color) {
 			transform = transform.times(translation).times(rotation);
@@ -129,6 +137,7 @@ export class Assignment3 extends Scene {
         const yellow = hex_color("#fac91a");
 		const pink = hex_color("#fe12b3");
 		const green = hex_color("#3ec64b");
+        const blue = hex_color("#0000FF");
         let model_transform = Mat4.identity();
 
 		for(let i = 0; i < map_width; i++) {
@@ -151,10 +160,12 @@ export class Assignment3 extends Scene {
 			}
 		}
 
-        let boxTransform = this.player_transform;
-        boxTransform = this.box_movement(boxTransform);
-        boxTransform = this.draw_box(context, program_state, boxTransform, yellow);
-        this.player_transform = boxTransform;
+        let cylinderTransform = this.player_transform;
+        //cylinderTransform = cylinderTransform.times(Mat4.translation(-cylinderTransform[0], -cylinderTransform[1], 0))
+        cylinderTransform = cylinderTransform.times(Mat4.scale(1,1, 1))
+        cylinderTransform = this.cylinder_movement(program_state, cylinderTransform);
+        cylinderTransform = this.draw_cylinder(context, program_state, cylinderTransform, blue);
+        this.player_transform = cylinderTransform;
     }
 }
 
