@@ -143,9 +143,7 @@ export class Assignment3 extends Scene {
 		for(let i = 0; i < map_width; i++) {
 			for(let j = 0; j < map_height; j++) {
 				let ij_transform = Mat4.identity().times(Mat4.translation(j*2, i*2, 0));
-				if(this.proc_gen.map[i][j] == 1) {
-					this.shapes.square.draw(context, program_state, ij_transform, this.materials.test.override({color: yellow}));}
-				else {
+				if(this.proc_gen.map[i][j] == 0) {
 					this.shapes.square.draw(context, program_state, ij_transform, this.materials.test.override({color: green}));}
 				let code = this.proc_gen.tiles[i][j];
 				if(code == '1111') {continue;}
