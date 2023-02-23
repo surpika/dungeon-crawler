@@ -19,7 +19,8 @@ export class Assignment3 extends Scene {
             torus2: new defs.Torus(3, 15),
             sphere: new defs.Subdivision_Sphere(4),
             circle: new defs.Regular_2D_Polygon(1, 15),
-			square: new defs.Square()
+			square: new defs.Square(),
+            cube: new defs.Cube(),
             // TODO:  Fill in as many additional shape instances as needed in this key/value table.
             //        (Requirement 1)
         };
@@ -35,6 +36,15 @@ export class Assignment3 extends Scene {
             //        (Requirement 4)
         }
 
+        const  data_members = {
+            player_transform: Mat4.identity(),
+            did_ud_move: false,
+            udSpeed: 0,
+            angle: 0,
+        }
+        Object.assign(this, data_members);
+
+
         this.initial_camera_location = Mat4.look_at(vec3(map_width - 1, map_height - 1, 1), vec3(map_width, map_height, 1), vec3(0, 0, 1));
     }
 
@@ -49,8 +59,46 @@ export class Assignment3 extends Scene {
         this.key_triggered_button("Attach to planet 4", ["Control", "4"], () => this.attached = () => this.planet_4);
         this.new_line();
         this.key_triggered_button("Attach to moon", ["Control", "m"], () => this.attached = () => this.moon);
+
+        this.key_triggered_button("Go up,", ["ArrowUp"], () => {
+            this.udSpeed = .1
+            this.did_ud_move = true;
+        }, undefined, () => {
+            this.udSpeed = 0;
+        });
+        this.key_triggered_button("Go down,", ["ArrowDown"], () => {
+
+            this.udSpeed = -0.1
+            this.did_ud_move = true;
+        }, undefined, () => {
+            this.udSpeed = 0;
+        });
+        this.key_triggered_button("Go Left,", ["ArrowLeft"], () => {
+            this.angle = 2*Math.PI / 180;
+        }, undefined, () => {
+            this.angle = 0;
+        });
+        this.key_triggered_button("Go Right,", ["ArrowRight"], () => {
+            this.angle = -(2*Math.PI / 180)
+        }, undefined, () => {
+            this.angle = 0;
+        });
     }
 
+    draw_box(context, program_state, model_transform, box_color) {
+
+        this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color:box_color}));
+
+        return model_transform;
+    }
+
+    box_movement(boxTransform) {
+        let dx = this.udSpeed * Math.sin(this.angle);
+        let dy = this.udSpeed * Math.cos(this.angle);
+        boxTransform = boxTransform.times(Mat4.rotation(this.angle, 0, 0, 1))
+        boxTransform = boxTransform.times(Mat4.translation(dx, dy, 0));
+        return boxTransform;
+    }
 	drawSquare(context, program_state, transform, translation, rotation, color) {
 			transform = transform.times(translation).times(rotation);
 			this.shapes.square.draw(context, program_state, transform, this.materials.test.override({color: color}));
@@ -102,6 +150,11 @@ export class Assignment3 extends Scene {
 					this.drawSquare(context, program_state, ij_transform, Mat4.translation(1,0,1), Mat4.rotation(Math.PI/2,0,1,0), pink);}	
 			}
 		}
+
+        let boxTransform = this.player_transform;
+        boxTransform = this.box_movement(boxTransform);
+        boxTransform = this.draw_box(context, program_state, boxTransform, yellow);
+        this.player_transform = boxTransform;
     }
 }
 
