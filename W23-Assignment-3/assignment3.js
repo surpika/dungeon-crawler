@@ -42,11 +42,28 @@ export class Assignment3 extends Scene {
             did_ud_move: false,
             udSpeed: 0,
             angle: 0,
+
+			
+			player_x: map_width,
+			player_y: map_height,
+			player_angle_of_view: Math.PI / 2,
+			player_radius: .5,
+
+			rotation_magnitude: 0,
         }
         Object.assign(this, data_members);
 
 
-        this.initial_camera_location = Mat4.look_at(vec3(map_width - 1, map_height - 1, 1), vec3(map_width, map_height, 1), vec3(0, 0, 1));
+		// look_at(eye, at, up) {
+  //           // look_at():  Produce a traditional graphics camera "lookat" matrix.
+  //           // Each input must be a 3x1 Vector.
+  //           // Note:  look_at() assumes the result will be used for a camera and stores its
+  //           // result in inverse space.
+  //           // If you want to use look_at to point a non-camera towards something, you can
+  //           // do so, but to generate the correct basis you must re-invert its result.
+
+
+        this.initial_camera_location = Mat4.look_at(vec3(this.player_x, this.player_y, 1), vec3(this.player_x, this.player_y + 5, 1), vec3(0, 0, 1));
     }
 
     make_control_panel() {
@@ -76,15 +93,23 @@ export class Assignment3 extends Scene {
         });
         this.key_triggered_button("Go Left,", ["ArrowLeft"], () => {
             this.angle = 2*Math.PI / 180;
+			this.rotation_magnitude = 1;
+			//this.player_angle_of_view += 10*(2*Math.PI / 180);
         }, undefined, () => {
-            this.angle = 0;
+            this.rotation_magnitude = 0;
         });
         this.key_triggered_button("Go Right,", ["ArrowRight"], () => {
-            this.angle = -(2*Math.PI / 180)
+            this.angle = -(2*Math.PI / 180);
+			this.rotation_magnitude = -1;
+			//this.player_angle_of_view -= 10*(2*Math.PI / 180);
         }, undefined, () => {
-            this.angle = 0;
+            this.rotation_magnitude = 0;
         });
     }
+
+	rotate_player() {
+		this.player_angle_of_view += this.rotation_magnitude * (2*Math.PI / 180);
+	}
 
     draw_cylinder(context, program_state, model_transform, box_color) {
 
@@ -112,13 +137,56 @@ export class Assignment3 extends Scene {
 			this.shapes.square.draw(context, program_state, transform, this.materials.test.override({color: color}));
 	}
 
+
+	handlePlayerMovement() {
+		let dx = this.udSpeed * Math.cos(this.player_angle_of_view);
+		let dy = this.udSpeed * Math.sin(this.player_angle_of_view);
+
+		this.player_x += dx;
+		this.player_y += dy;
+	}
+
+	playerWallCollisionHandling() {
+		// Find i and j indices of tile that player is in
+		let player_tile_i = Math.floor(this.player_x / 2);
+		let player_tile_j = Math.floor(this.player_y / 2);
+
+		let tiles_to_check = 2;
+
+		let tile = this.proc_gen.tiles[player_tile_j][player_tile_i];
+
+		// console.log(this.proc_gen.tiles);
+		// console.log(tile);
+		// console.log("i: " + player_tile_i + ", j: " + player_tile_j);
+
+		if (tile.charAt(0) == '1') {
+			// Top
+			let wall_i = (player_tile_i + 1) * 2;
+			console.log("wall i: " + wall_i);
+		}
+		if (tile.charAt(1) == '1') {
+			// Left
+		}
+		if (tile.charAt(2) == '1') {
+			// Bottom
+		}
+		if (tile.charAt(3) == '1') {
+			// Right
+		}
+
+
+		
+	}
+
+	
+
     display(context, program_state) {
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(this.initial_camera_location);
+            // program_state.set_camera(this.initial_camera_location);
         }
 
         program_state.projection_transform = Mat4.perspective(
@@ -138,13 +206,16 @@ export class Assignment3 extends Scene {
 		const pink = hex_color("#fe12b3");
 		const green = hex_color("#3ec64b");
         const blue = hex_color("#0000FF");
+		const gray = hex_color("#808080");
         let model_transform = Mat4.identity();
 
 		for(let i = 0; i < map_width; i++) {
 			for(let j = 0; j < map_height; j++) {
 				let ij_transform = Mat4.identity().times(Mat4.translation(j*2, i*2, 0));
 				if(this.proc_gen.map[i][j] == 0) {
-					this.shapes.square.draw(context, program_state, ij_transform, this.materials.test.override({color: green}));}
+					this.shapes.square.draw(context, program_state, ij_transform, this.materials.test.override({color: green}));
+					//this.shapes.square.draw(context, program_state, ij_transform.times(Mat4.translation(0,0,2)), this.materials.test.override({color: gray}));
+				}
 				let code = this.proc_gen.tiles[i][j];
 				if(code == '1111') {continue;}
 				if(code.charAt(0) == '1') {
@@ -158,13 +229,49 @@ export class Assignment3 extends Scene {
 			}
 		}
 
+
         let cylinderTransform = this.player_transform;
         //cylinderTransform = cylinderTransform.times(Mat4.translation(-cylinderTransform[0], -cylinderTransform[1], 0))
         cylinderTransform = cylinderTransform.times(Mat4.scale(1,1, 1))
         cylinderTransform = this.cylinder_movement(program_state, cylinderTransform);
         cylinderTransform = this.draw_cylinder(context, program_state, cylinderTransform, blue);
         this.player_transform = cylinderTransform;
+
+		// model_transform = Mat4.identity().times(Mat4.translation(map_width,map_height,0));
+		// this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("fcba03")}));
+
+		model_transform = Mat4.identity();
+		this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("fcba03")}));
+
+
+		// Handle Player Movement
+		this.handlePlayerMovement();
+
+		// console.log("Player x: " + this.player_x);
+		// console.log("Player y: " + this.player_y);
+		// console.log("Player a: " + this.player_angle_of_view);
+
+		let camera = Mat4.look_at(vec3(this.player_x, this.player_y, 1), vec3(this.player_x + (5*Math.cos(this.player_angle_of_view)), this.player_y + (5*Math.sin(this.player_angle_of_view)), 1), vec3(0, 0, 1));
+		program_state.set_camera(camera);
+
+		this.rotate_player();
+
+
+		this.playerWallCollisionHandling();
+
+		
     }
+
+
+	// HELPER FUNCTIONS
+
+	// Given center and radius of two circles
+	// Return true if they overlap, otherwise false
+	do_circles_collide(x1,y1,r1,x2,y2,r2) {
+	    distance_of_centers = Math.sqrt((x1-x2)**2 + (y1-y2)**2);
+	    return distance_of_centers < r1 + r2;
+	}
+	
 }
 
 class Gouraud_Shader extends Shader {
