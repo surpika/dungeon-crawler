@@ -27,7 +27,7 @@ const Proc_Gen =
 		}
 
 		snake_gen(i, j, count, direction) {
-			console.log(i, j, count, direction);
+			//console.log(i, j, count, direction);
 			let directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 			if(count >= this.num_empty) {
 				return;
@@ -77,10 +77,10 @@ const Proc_Gen =
 					if(this.map[i][j] == empty) {
 						this.tiles[i][j] = 
 						[
+							+((j == map_height - 1) || this.map[i][j+1] == wall),
 							+((i == 0) || this.map[i-1][j] == wall),
 							+((j == 0) || this.map[i][j-1] == wall),
-							+((i == map_width - 1) || this.map[i+1][j] == wall),
-							+((j == map_height - 1) || this.map[i][j+1] == wall)
+							+((i == map_width - 1) || this.map[i+1][j] == wall)
 						].join(''); //write array in string format, e.g. '0101'
 					}
 				}

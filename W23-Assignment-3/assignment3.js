@@ -44,10 +44,10 @@ export class Assignment3 extends Scene {
             angle: 0,
 
 			
-			player_x: map_width,
-			player_y: map_height,
+			player_x: map_width - 1,
+			player_y: map_height - 1,
 			player_angle_of_view: Math.PI / 2,
-			player_radius: .5,
+			player_radius: .25,
 
 			rotation_magnitude: 0,
         }
@@ -146,39 +146,80 @@ export class Assignment3 extends Scene {
 		this.player_y += dy;
 	}
 
-	playerWallCollisionHandling() {
-		// Find i and j indices of tile that player is in
-		let player_tile_i = Math.floor(this.player_x / 2);
-		let player_tile_j = Math.floor(this.player_y / 2);
+	printCollisionDebugOutput(player_tile_i, player_tile_j, walls_output) {
+		let str = "player x: " + this.player_x + ", player y: " + this.player_y + ", player_tile_i: " + player_tile_i + ", player_tile_j: " + player_tile_j + ", ";
+		if(!(walls_output === undefined) || walls_output == "") {
+			str += walls_output;
+		}
+		else {
+			str = str + "no walls detected";
+		}
+		console.log(JSON.parse(JSON.stringify(str)));
+	}
+
+	getWallsInTile(player_tile_i, player_tile_j) {		
+		if(player_tile_i < 0 || player_tile_i > 2*map_width/2 - 1 || player_tile_j < 0 || player_tile_j > 2*map_height/2 - 1) {
+			//this.printCollisionDebugOutput(player_tile_i, player_tile_j);
+			return [];
+		}
 
 		let tiles_to_check = 2;
 
-		let tile = this.proc_gen.tiles[player_tile_j][player_tile_i];
+		let tile = this.proc_gen.tiles[player_tile_i][player_tile_j];
+
+		if(tile == '1111') {
+			//this.printCollisionDebugOutput(player_tile_i, player_tile_j);
+			return [];
+		}
 
 		// console.log(this.proc_gen.tiles);
 		// console.log(tile);
-		// console.log("i: " + player_tile_i + ", j: " + player_tile_j);
+		//console.log("i: " + player_tile_i + ", j: " + player_tile_j);
+
+		let walls_output = "";
+
+		let walls_in_tile = [[], [], [], []];
 
 		if (tile.charAt(0) == '1') {
 			// Top
-			let wall_i = (player_tile_i + 1) * 2;
-			console.log("wall i: " + wall_i);
+			let wall_x = player_tile_i * 2;
+			let wall_y = player_tile_j * 2 + 1;
+			walls_output += ", top wall x: " + wall_x;
+			walls_output += ", top wall y: " + wall_y;
+			walls_in_tile[0] = [wall_x, wall_y];
 		}
 		if (tile.charAt(1) == '1') {
 			// Left
+			let wall_x = player_tile_i * 2 - 1;
+			let wall_y = player_tile_j * 2;
+			walls_output += ", left wall x: " + wall_x;
+			walls_output += ", left wall y: " + wall_y;
+			walls_in_tile[1] = [wall_x, wall_y];
 		}
 		if (tile.charAt(2) == '1') {
 			// Bottom
+			let wall_x = player_tile_i * 2;
+			let wall_y = player_tile_j * 2 - 1;
+			walls_output += ", bottom wall x: " + wall_x;
+			walls_output += ", bottom wall y: " + wall_y;
+			walls_in_tile[2] = [wall_x, wall_y];
 		}
 		if (tile.charAt(3) == '1') {
 			// Right
-		}
+			let wall_x = player_tile_i * 2 + 1;
+			let wall_y = player_tile_j * 2;
+			walls_output += ", right wall x: " + wall_x;
+			walls_output += ", right wall y: " + wall_y;
+			walls_in_tile[3] = [wall_x, wall_y];
+		}		
 
-
+		//this.printCollisionDebugOutput(player_tile_i, player_tile_j, walls_output);
+		return walls_in_tile;
 		
 	}
 
-	
+	getWallCollisions(walls) {
+	}
 
     display(context, program_state) {
         // display():  Called once per frame of animation.
@@ -211,7 +252,7 @@ export class Assignment3 extends Scene {
 
 		for(let i = 0; i < map_width; i++) {
 			for(let j = 0; j < map_height; j++) {
-				let ij_transform = Mat4.identity().times(Mat4.translation(j*2, i*2, 0));
+				let ij_transform = Mat4.identity().times(Mat4.translation(i*2, j*2, 0));
 				if(this.proc_gen.map[i][j] == 0) {
 					this.shapes.square.draw(context, program_state, ij_transform, this.materials.test.override({color: green}));
 					//this.shapes.square.draw(context, program_state, ij_transform.times(Mat4.translation(0,0,2)), this.materials.test.override({color: gray}));
@@ -219,13 +260,13 @@ export class Assignment3 extends Scene {
 				let code = this.proc_gen.tiles[i][j];
 				if(code == '1111') {continue;}
 				if(code.charAt(0) == '1') {
-					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,-1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
+					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
 				if(code.charAt(1) == '1') {
 					this.drawSquare(context, program_state, ij_transform, Mat4.translation(-1,0,1), Mat4.rotation(Math.PI/2,0,1,0), pink);}
 				if(code.charAt(2) == '1') {
-					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
+					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,-1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
 				if(code.charAt(3) == '1') {
-					this.drawSquare(context, program_state, ij_transform, Mat4.translation(1,0,1), Mat4.rotation(Math.PI/2,0,1,0), pink);}	
+					this.drawSquare(context, program_state, ij_transform, Mat4.translation(1,0,1), Mat4.rotation(Math.PI/2,0,1,0), pink);}
 			}
 		}
 
@@ -256,8 +297,11 @@ export class Assignment3 extends Scene {
 
 		this.rotate_player();
 
+				// Find i and j indices of tile that player is in
+		let player_tile_i = Math.floor((this.player_x + 1) / 2);
+		let player_tile_j = Math.floor((this.player_y + 1) / 2);
+		console.log(this.getWallsInTile(player_tile_i, player_tile_j));
 
-		this.playerWallCollisionHandling();
 
 		
     }
