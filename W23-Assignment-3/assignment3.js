@@ -46,8 +46,10 @@ export class Assignment3 extends Scene {
 			
 			player_x: map_width - 1,
 			player_y: map_height - 1,
+			tick_initial_player_x: map_width - 1,
+			tick_initial_player_y: map_height - 1,
 			player_angle_of_view: Math.PI / 2,
-			player_radius: 2,
+			player_radius: 1,
 
 			rotation_magnitude: 0,
         }
@@ -178,7 +180,7 @@ export class Assignment3 extends Scene {
 
 		let walls_output = "";
 
-		let walls_in_tile = [[], [], [], []]; //Top, Left, Bottom, Right
+		let walls_in_tile = [];
 
 		if (tile.charAt(0) == '1') {
 			// Top
@@ -186,7 +188,7 @@ export class Assignment3 extends Scene {
 			let wall_y = player_tile_j * 2 + 1;
 			walls_output += ", top wall x: " + wall_x;
 			walls_output += ", top wall y: " + wall_y;
-			walls_in_tile[0] = [wall_x, wall_y];
+			walls_in_tile.push([wall_x, wall_y, 't']);
 		}
 		if (tile.charAt(1) == '1') {
 			// Left
@@ -194,7 +196,7 @@ export class Assignment3 extends Scene {
 			let wall_y = player_tile_j * 2;
 			walls_output += ", left wall x: " + wall_x;
 			walls_output += ", left wall y: " + wall_y;
-			walls_in_tile[1] = [wall_x, wall_y];
+			walls_in_tile.push([wall_x, wall_y, 'l']);
 		}
 		if (tile.charAt(2) == '1') {
 			// Bottom
@@ -202,7 +204,7 @@ export class Assignment3 extends Scene {
 			let wall_y = player_tile_j * 2 - 1;
 			walls_output += ", bottom wall x: " + wall_x;
 			walls_output += ", bottom wall y: " + wall_y;
-			walls_in_tile[2] = [wall_x, wall_y];
+			walls_in_tile.push([wall_x, wall_y, 'b']);
 		}
 		if (tile.charAt(3) == '1') {
 			// Right
@@ -210,7 +212,7 @@ export class Assignment3 extends Scene {
 			let wall_y = player_tile_j * 2;
 			walls_output += ", right wall x: " + wall_x;
 			walls_output += ", right wall y: " + wall_y;
-			walls_in_tile[3] = [wall_x, wall_y];
+			walls_in_tile.push([wall_x, wall_y, 'r']);
 		}		
 
 		//this.printCollisionDebugOutput(player_tile_i, player_tile_j, walls_output);
@@ -221,35 +223,74 @@ export class Assignment3 extends Scene {
 	distance(x1, y1, x2, y2) {
 		return Math.sqrt((x1-x2)**2 + (y1-y2)**2);
 	}
-
-	checkCircleLineCollision(line_orientation, line_coords, circle_x, circle_y, circle_radius) {
-		if(line_orientation == 'x') {
-			if(circle_x < line_coords[0] + 1 && circle_x > line_coords[0] - 1) {
-				console.log("hi");
-				if(Math.abs(circle_y - line_coords[1]) < circle_radius) {
+	
+	checkCircleLineCollision(wall, circle_x, circle_y, circle_radius) {
+		//console.log(wall[2]);
+		if(wall[2] == 't') {
+			if(circle_x < wall[0] + 1 && circle_x > wall[0] - 1 && circle_y < wall[1]) {
+				if(Math.abs(circle_y - wall[1]) < circle_radius) {
+					//console.log("top collision");
 					return true;
 				}
 			}
-			else
-			{
-				let low_x_distance = this.distance(circle_x, circle_y, line_coords[0]-1, line_coords[1]) < circle_radius;
-				let high_x_distance  = this.distance(circle_x, circle_y, line_coords[0]+1, line_coords[1]);
+			else if (circle_y < wall[1]) {
+				let low_x_distance = this.distance(circle_x, circle_y, wall[0]-1, wall[1]) < circle_radius;
+				let high_x_distance  = this.distance(circle_x, circle_y, wall[0]+1, wall[1]);
 				if(low_x_distance < circle_radius || high_x_distance < circle_radius) {
+					//console.log("top collision");
 					return true;
 				}
 			}
 		}
-		else if(line_orientation == 'y') {
-			if(circle_y < line_coords[1] + 1 && circle_y > line_coords[1] - 1) {
-				if(Math.abs(circle_y - line_coords[0]) < circle_radius) {
+		if(wall[2] == 'l') {
+			if(circle_y < wall[1] + 1 && circle_y > wall[1] - 1 && circle_x > wall[0]) {
+				if(Math.abs(circle_x - wall[0]) < circle_radius) {
+					//console.log("left collision");
 					return true;
 				}
 			}
-			else
+			else if (circle_x > wall[0])
 			{
-				let low_y_distance = this.distance(circle_x, circle_y, line_coords[0], line_coords[1]-1);
-				let high_y_distance = this.distance(circle_x, circle_y, line_coords[0], line_coords[1]+1);
-				if(low_y_distance < circle_radius || high_y_distance < circle_radius) {
+				let low_x_distance = this.distance(circle_x, circle_y, wall[0]-1, wall[1]) < circle_radius;
+				let high_x_distance  = this.distance(circle_x, circle_y, wall[0]+1, wall[1]);
+				if(low_x_distance < circle_radius || high_x_distance < circle_radius) {
+					//console.log("left collision");
+					return true;
+				}
+			}
+		}
+		if(wall[2] == 'b') {
+			if(circle_x < wall[0] + 1 && circle_x > wall[0] - 1 && circle_y > wall[1]) {
+				
+				if(Math.abs(circle_y - wall[1]) < circle_radius) {
+					//console.log("bottom collision");
+					return true;
+				}
+			}
+			else if (circle_y > wall[1]) {
+				let low_x_distance = this.distance(circle_x, circle_y, wall[0]-1, wall[1]) < circle_radius;
+				let high_x_distance  = this.distance(circle_x, circle_y, wall[0]+1, wall[1]);
+				if(low_x_distance < circle_radius || high_x_distance < circle_radius) {
+					//console.log("bottom collision");
+					return true;
+				}
+			}
+		}
+		if(wall[2] == 'r') {
+			console.log("here");
+			if(circle_x < wall[1] + 1 && circle_x > wall[1] - 1 && circle_x < wall[0]) {
+				
+				if(Math.abs(circle_x - wall[0]) < circle_radius) {
+					console.log("right collision");
+					return true;
+				}
+			}
+			else if (circle_x < wall[0])
+			{
+				let low_x_distance = this.distance(circle_x, circle_y, wall[0]-1, wall[1]) < circle_radius;
+				let high_x_distance  = this.distance(circle_x, circle_y, wall[0]+1, wall[1]);
+				if(low_x_distance < circle_radius || high_x_distance < circle_radius) {
+					console.log("right collision");
 					return true;
 				}
 			}
@@ -257,37 +298,47 @@ export class Assignment3 extends Scene {
 		return false;
 	}
 
-	getWallCollisions(x_walls, y_walls, actor_x, actor_y, actor_radius) {
-		for (let i = 0; i < x_walls.length; i++) {
-			let c = this.checkCircleLineCollision('x', x_walls[i], actor_x, actor_y, actor_radius);
+	getWallCollisions(walls, actor_x, actor_y, actor_radius) {
+		let results = [[],[], []]; // wall x, wall y, num collisions
+		let num_collisions = 0;
+		for (let i = 0; i < walls.length; i++) {
+			let c = this.checkCircleLineCollision(walls[i], actor_x, actor_y, actor_radius);
 			if(c) {
-				console.log("colliding with x wall at " + x_walls[i]);
+				num_collisions++;
+				results = walls[i];
+				console.log("colliding with wall: " + walls[i]);
 			}
 		}
-		for (let i = 0; i < y_walls.length; i++) {
-			let c = this.checkCircleLineCollision('y', y_walls[i], actor_x, actor_y, actor_radius);
-			if(c) {
-				console.log("colliding with y wall at " + y_walls[i]);
-			}
-		}
+		results.push(num_collisions);
+		return results;
 	}
 
 	handlePlayerCollision() {
 		// Find i and j indices of tile that player is in
 		let player_tile_i = Math.floor((this.player_x + 1) / 2);
 		let player_tile_j = Math.floor((this.player_y + 1) / 2);
-		let x_walls = [];
-		let y_walls = [];
 		let v = [[0,0], [0,1], [1,0], [0,-1], [-1,0]];
+		let local_walls = [];
 		for(let i  = 0; i < 5; i ++) {
 			let tile_walls = this.getWallsInTile(player_tile_i + v[i][0], player_tile_j + v[i][1]);
-			if(!(tile_walls[0] === undefined) && tile_walls[0].length > 0) {x_walls.push(tile_walls[0]);}
-			if(!(tile_walls[2] === undefined) && tile_walls[2].length > 0) {x_walls.push(tile_walls[2]);}
-			if(!(tile_walls[1] === undefined) && tile_walls[1].length > 0) {y_walls.push(tile_walls[1]);}
-			if(!(tile_walls[3] === undefined) && tile_walls[3].length > 0) {y_walls.push(tile_walls[3]);}
+			local_walls = local_walls.concat(tile_walls);
 		}
 
-		this.getWallCollisions(x_walls, y_walls, this.player_x, this.player_y, this.player_radius);
+		let result = this.getWallCollisions(local_walls, this.player_x, this.player_y, this.player_radius);
+		if(result[3] == 1) {
+			let x = result[0];
+			let y = result[1];
+			let orientation = result[2];
+			if(orientation == 't') {this.player_y = y - this.player_radius;}
+			if(orientation == 'l') {this.player_x = x + this.player_radius;}
+			if(orientation == 'b') {this.player_y = y + this.player_radius;}
+			if(orientation == 'r') {this.player_x = x - this.player_radius;}
+
+		}
+		else if(result[3] > 1) {
+			this.player_x = this.tick_initial_player_x;
+			this.player_y = this.tick_initial_player_y;
+		}
 	}
 
     display(context, program_state) {
@@ -353,20 +404,23 @@ export class Assignment3 extends Scene {
 		model_transform = Mat4.identity();
 		this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("fcba03")}));
 
-
+		//save player's position in case they need to be moved back due to collision
+		this.tick_initial_player_x = this.player_x;
+		this.tick_initial_player_y = this.player_y;
+		
+		this.rotate_player();
+		
 		// Handle Player Movement
 		this.handlePlayerMovement();
 
 		// console.log("Player x: " + this.player_x);
 		// console.log("Player y: " + this.player_y);
 		// console.log("Player a: " + this.player_angle_of_view);
+		
+		this.handlePlayerCollision();
 
 		let camera = Mat4.look_at(vec3(this.player_x, this.player_y, 1), vec3(this.player_x + (5*Math.cos(this.player_angle_of_view)), this.player_y + (5*Math.sin(this.player_angle_of_view)), 1), vec3(0, 0, 1));
 		program_state.set_camera(camera);
-
-		this.rotate_player();
-
-		this.handlePlayerCollision();		
     }
 
 
