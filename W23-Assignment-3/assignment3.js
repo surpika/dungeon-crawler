@@ -47,7 +47,7 @@ export class Assignment3 extends Scene {
 			player_x: map_width - 1,
 			player_y: map_height - 1,
 			player_angle_of_view: Math.PI / 2,
-			player_radius: .25,
+			player_radius: 2,
 
 			rotation_magnitude: 0,
         }
@@ -178,7 +178,7 @@ export class Assignment3 extends Scene {
 
 		let walls_output = "";
 
-		let walls_in_tile = [[], [], [], []];
+		let walls_in_tile = [[], [], [], []]; //Top, Left, Bottom, Right
 
 		if (tile.charAt(0) == '1') {
 			// Top
@@ -218,7 +218,76 @@ export class Assignment3 extends Scene {
 		
 	}
 
-	getWallCollisions(walls) {
+	distance(x1, y1, x2, y2) {
+		return Math.sqrt((x1-x2)**2 + (y1-y2)**2);
+	}
+
+	checkCircleLineCollision(line_orientation, line_coords, circle_x, circle_y, circle_radius) {
+		if(line_orientation == 'x') {
+			if(circle_x < line_coords[0] + 1 && circle_x > line_coords[0] - 1) {
+				console.log("hi");
+				if(Math.abs(circle_y - line_coords[1]) < circle_radius) {
+					return true;
+				}
+			}
+			else
+			{
+				let low_x_distance = this.distance(circle_x, circle_y, line_coords[0]-1, line_coords[1]) < circle_radius;
+				let high_x_distance  = this.distance(circle_x, circle_y, line_coords[0]+1, line_coords[1]);
+				if(low_x_distance < circle_radius || high_x_distance < circle_radius) {
+					return true;
+				}
+			}
+		}
+		else if(line_orientation == 'y') {
+			if(circle_y < line_coords[1] + 1 && circle_y > line_coords[1] - 1) {
+				if(Math.abs(circle_y - line_coords[0]) < circle_radius) {
+					return true;
+				}
+			}
+			else
+			{
+				let low_y_distance = this.distance(circle_x, circle_y, line_coords[0], line_coords[1]-1);
+				let high_y_distance = this.distance(circle_x, circle_y, line_coords[0], line_coords[1]+1);
+				if(low_y_distance < circle_radius || high_y_distance < circle_radius) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	getWallCollisions(x_walls, y_walls, actor_x, actor_y, actor_radius) {
+		for (let i = 0; i < x_walls.length; i++) {
+			let c = this.checkCircleLineCollision('x', x_walls[i], actor_x, actor_y, actor_radius);
+			if(c) {
+				console.log("colliding with x wall at " + x_walls[i]);
+			}
+		}
+		for (let i = 0; i < y_walls.length; i++) {
+			let c = this.checkCircleLineCollision('y', y_walls[i], actor_x, actor_y, actor_radius);
+			if(c) {
+				console.log("colliding with y wall at " + y_walls[i]);
+			}
+		}
+	}
+
+	handlePlayerCollision() {
+		// Find i and j indices of tile that player is in
+		let player_tile_i = Math.floor((this.player_x + 1) / 2);
+		let player_tile_j = Math.floor((this.player_y + 1) / 2);
+		let x_walls = [];
+		let y_walls = [];
+		let v = [[0,0], [0,1], [1,0], [0,-1], [-1,0]];
+		for(let i  = 0; i < 5; i ++) {
+			let tile_walls = this.getWallsInTile(player_tile_i + v[i][0], player_tile_j + v[i][1]);
+			if(!(tile_walls[0] === undefined) && tile_walls[0].length > 0) {x_walls.push(tile_walls[0]);}
+			if(!(tile_walls[2] === undefined) && tile_walls[2].length > 0) {x_walls.push(tile_walls[2]);}
+			if(!(tile_walls[1] === undefined) && tile_walls[1].length > 0) {y_walls.push(tile_walls[1]);}
+			if(!(tile_walls[3] === undefined) && tile_walls[3].length > 0) {y_walls.push(tile_walls[3]);}
+		}
+
+		this.getWallCollisions(x_walls, y_walls, this.player_x, this.player_y, this.player_radius);
 	}
 
     display(context, program_state) {
@@ -297,13 +366,7 @@ export class Assignment3 extends Scene {
 
 		this.rotate_player();
 
-				// Find i and j indices of tile that player is in
-		let player_tile_i = Math.floor((this.player_x + 1) / 2);
-		let player_tile_j = Math.floor((this.player_y + 1) / 2);
-		console.log(this.getWallsInTile(player_tile_i, player_tile_j));
-
-
-		
+		this.handlePlayerCollision();		
     }
 
 
