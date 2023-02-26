@@ -49,7 +49,7 @@ export class Assignment3 extends Scene {
 			tick_initial_player_x: map_width - 1,
 			tick_initial_player_y: map_height - 1,
 			player_angle_of_view: Math.PI / 2,
-			player_radius: 0.5,
+			player_radius: 0.3,
 
 			rotation_magnitude: 0,
         }
@@ -379,8 +379,13 @@ export class Assignment3 extends Scene {
 	handlePlayerInnerCornerCollision() {
 		let player_tile_i = Math.floor((this.player_x + 1) / 2);
 		let player_tile_j = Math.floor((this.player_y + 1) / 2);
+		if(player_tile_i < 0 || player_tile_i > 2*map_width/2 - 1 || player_tile_j < 0 || player_tile_j > 2*map_height/2 - 1) {
+			//this.printCollisionDebugOutput(player_tile_i, player_tile_j);
+			return;
+		}
 		let tile = this.proc_gen.tiles[player_tile_i][player_tile_j];
 		if(tile.charAt(0) == '1' && tile.charAt(1) == '1') { //top and left
+			console.log("topleft");
 			let top_wall_y = player_tile_j * 2 + 1;
 			let left_wall_x = player_tile_i * 2 - 1;
 			let top_boundary = top_wall_y - this.player_radius;
@@ -391,7 +396,8 @@ export class Assignment3 extends Scene {
 			if(this.player_y > top_boundary) {
 				this.player_y = top_boundary;
 			}
-		} else if(tile.charAt(1) == '1' && tile.charAt(2) == '1') { //left and bottom
+		} if(tile.charAt(1) == '1' && tile.charAt(2) == '1') { //left and bottom
+			console.log("bottomleft");
 			let left_wall_x = player_tile_i * 2 - 1;
 			let bottom_wall_y = player_tile_j * 2 -1;
 			let left_boundary = left_wall_x + this.player_radius;
@@ -402,7 +408,8 @@ export class Assignment3 extends Scene {
 			if(this.player_y < bottom_boundary) {
 				this.player_y = bottom_boundary;
 			}
-		} else if(tile.charAt(2) == '1' && tile.charAt(3) == '1') { //bottom and right
+		} if(tile.charAt(2) == '1' && tile.charAt(3) == '1') { //bottom and right
+			console.log("bottomright");
 			let right_wall_x = player_tile_i * 2 + 1;
 			let bottom_wall_y = player_tile_j * 2 -1;
 			let right_boundary = right_wall_x - this.player_radius;
@@ -413,7 +420,8 @@ export class Assignment3 extends Scene {
 			if(this.player_y < bottom_boundary) {
 				this.player_y = bottom_boundary;
 			}
-		} else if(tile.charAt(3) == '1' && tile.charAt(0) == '1') { //right and top
+		} if(tile.charAt(3) == '1' && tile.charAt(0) == '1') { //right and top
+			console.log("topright");
 			let right_wall_x = player_tile_i * 2 + 1;
 			let top_wall_y = player_tile_j * 2 + 1;
 			let right_boundary = right_wall_x - this.player_radius;
