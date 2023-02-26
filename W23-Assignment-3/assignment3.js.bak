@@ -416,7 +416,7 @@ export class Assignment3 extends Scene {
 		} else if(tile.charAt(3) == '1' && tile.charAt(0) == '1') { //right and top
 			let right_wall_x = player_tile_i * 2 + 1;
 			let top_wall_y = player_tile_j * 2 + 1;
-			let right_boundary = right_wall_x - this.player_radius;
+			let right_wall_boundary = right_wall_x - this.player_radius;
 			let top_boundary = top_wall_y - this.player_radius;
 			if(this.player_x > right_boundary) {
 				this.player_x = right_boundary;
