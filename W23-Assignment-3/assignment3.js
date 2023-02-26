@@ -51,6 +51,11 @@ export class Assignment3 extends Scene {
 			player_angle_of_view: Math.PI / 2,
 			player_radius: 0.3,
 
+			projectiles: [], // [projectile_x, projectile_y, angle_of_direction]
+			projectile_speed: .3,
+			time_to_next_fire: 0, // current time until another projectile can be fired
+			time_between_shots: 60, // minimum time until another projectile can be fired (60 -> 1 second)
+
 			rotation_magnitude: 0,
         }
         Object.assign(this, data_members);
@@ -80,6 +85,16 @@ export class Assignment3 extends Scene {
         this.new_line();
         this.key_triggered_button("Attach to moon", ["Control", "m"], () => this.attached = () => this.moon);
 
+		
+		this.key_triggered_button("Fire Projectile", [" "], () => {
+			if (this.time_to_next_fire <= 0) {
+				let new_projectile = [this.player_x, this.player_y, this.player_angle_of_view];
+				this.projectiles.push(new_projectile);
+				console.log(this.projectiles);
+				this.time_to_next_fire = this.time_between_shots
+			}
+        });
+		
         this.key_triggered_button("Go up,", ["ArrowUp"], () => {
             this.udSpeed = .1
             this.did_ud_move = true;
@@ -504,6 +519,57 @@ export class Assignment3 extends Scene {
 		this.handlePlayerCornerCollision();
 	}
 
+
+	handleProjectileMovement() {
+		for (let i = 0; i < this.projectiles.length; i++) {
+			let projectile = this.projectiles[i];
+			let projectile_x = projectile[0];
+			let projectile_y = projectile[1];
+			let projectile_angle = projectile[2];
+			let dx = this.projectile_speed * Math.cos(projectile_angle);
+			let dy = this.projectile_speed * Math.sin(projectile_angle);
+			let new_x = projectile_x + dx;
+			let new_y = projectile_y + dy;
+			this.projectiles[i] = [new_x, new_y, projectile_angle];
+		}
+	}
+
+	// NOT FULLY TESTED YET
+	
+	handleProjectileCollision() {
+		for (let i = 0; i < this.projectiles.length; i++) {
+			let projectile = this.projectiles[i];
+			let projectile_x = projectile[0];
+			let projectile_y = projectile[1];
+			let tile_i = Math.floor((this.player_x + 1) / 2);
+			let tile_j = Math.floor((this.player_y + 1) / 2);
+			let tile = this.proc_gen.tiles[tile_i][tile_j];
+
+			if (tile_i < 0 || tile_i >= map_width || tile_j < 0 || tile_j >= map_height) {
+				//remove projectile
+				this.projectiles = this.projectiles.splice(i, 1);
+			} else if (this.proc_gen.map[tile_i][tile_j] == 1) {
+				//remove projectile
+				this.projectiles = this.projectiles.splice(i, 1);
+			}
+		}
+	}
+
+	
+	displayProjectiles(context, program_state) {
+		for (let i = 0; i < this.projectiles.length; i++) {
+			let projectile = this.projectiles[i];
+			console.log(projectile);
+			let projectile_x = projectile[0];
+			let projectile_y = projectile[1];
+			let model_transform = Mat4.identity().times(Mat4.translation(projectile_x,projectile_y,1)).times(Mat4.scale(.2,.2,.2));
+			this.shapes.sphere.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#2c79f5")}));
+		}
+	}
+
+	
+	
+
     display(context, program_state) {
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
@@ -582,19 +648,22 @@ export class Assignment3 extends Scene {
 		
 		this.handlePlayerCollision();
 
+
+		// Adjust firing timer if needed
+		if (this.time_to_next_fire > 0) {
+			this.time_to_next_fire -= 1;
+		}
+
+		this.handleProjectileMovement();
+		this.handleProjectileCollision();
+		this.displayProjectiles(context, program_state);
+		console.log(this.projectiles);
+		
+
 		let camera = Mat4.look_at(vec3(this.player_x, this.player_y, 1), vec3(this.player_x + (5*Math.cos(this.player_angle_of_view)), this.player_y + (5*Math.sin(this.player_angle_of_view)), 1), vec3(0, 0, 1));
 		program_state.set_camera(camera);
     }
 
-
-	// HELPER FUNCTIONS
-
-	// Given center and radius of two circles
-	// Return true if they overlap, otherwise false
-	do_circles_collide(x1,y1,r1,x2,y2,r2) {
-	    distance_of_centers = Math.sqrt((x1-x2)**2 + (y1-y2)**2);
-	    return distance_of_centers < r1 + r2;
-	}
 	
 }
 

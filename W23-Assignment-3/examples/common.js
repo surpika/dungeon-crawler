@@ -881,7 +881,7 @@ const Movement_Controls = defs.Movement_Controls =
             this.new_line();
             this.new_line();
 
-            this.key_triggered_button("Up", [" "], () => this.thrust[1] = -1, undefined, () => this.thrust[1] = 0);
+            // this.key_triggered_button("Up", [" "], () => this.thrust[1] = -1, undefined, () => this.thrust[1] = 0);
             this.key_triggered_button("Forward", ["w"], () => this.thrust[2] = 1, undefined, () => this.thrust[2] = 0);
             this.new_line()
             // this.key_triggered_button("Forward", ["ArrowUp"], () => this.thrust[2] = .5, undefined, () => this.thrust[2] = 0);
