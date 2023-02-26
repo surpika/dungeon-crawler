@@ -50,13 +50,20 @@ export class Assignment3 extends Scene {
 			tick_initial_player_y: map_height - 1,
 			player_angle_of_view: Math.PI / 2,
 			player_radius: 0.3,
+			rotation_magnitude: 0,
+			
+			player_score: 0,
+			current_floor: 1,
 
 			projectiles: [], // [projectile_x, projectile_y, angle_of_direction]
 			projectile_speed: .3,
 			time_to_next_fire: 0, // current time until another projectile can be fired
 			time_between_shots: 60, // minimum time until another projectile can be fired (60 -> 1 second)
 
-			rotation_magnitude: 0,
+			
+
+			exit_tile_i: Math.floor(map_width / 2) - 1,
+			exit_tile_j: Math.floor(map_height / 2) + 1,
         }
         Object.assign(this, data_members);
 
@@ -567,6 +574,44 @@ export class Assignment3 extends Scene {
 		}
 	}
 
+
+	
+	startNewFloor() {
+		
+		this.score += 20; // Score increased by reaching new floor
+		this.current_floor += 1; // Current floor increased by one
+
+		// Reset player coordinates and other movement variables
+		this.player_x = map_width - 1;
+		this.player_y = map_height - 1;
+		this.tick_initial_player_x = map_width - 1;
+		this.tick_initial_player_y = map_height - 1;
+		this.player_angle_of_view = Math.PI / 2;
+		this.rotation_magnitude = 0;
+
+		// Reset projectiles and firing timer
+		this.projectiles = []; // [projectile_x, projectile_y, angle_of_direction]
+		this.time_to_next_fire = 0; // current time until another projectile can be fired
+
+		// Generate new maze
+		// MIGHT WANT TO VERIFY WE DON'T HAVE TO DELETE PREVIOUS OBJECT
+		this.proc_gen = new Proc_Gen();
+
+		// Generate new exit tile
+		this.exit_tile_i = Math.floor(map_width / 2) - 1;
+		this.exit_tile_j = Math.floor(map_height / 2) + 1;
+	}
+	
+	checkIfExitReached() {
+		let player_tile_i = Math.floor((this.player_x + 1) / 2);
+		let player_tile_j = Math.floor((this.player_y + 1) / 2);
+
+		if (player_tile_i == this.exit_tile_i && player_tile_j == this.exit_tile_j) {
+			// Exit reached
+			this.startNewFloor()
+		}
+	}
+
 	
 	
 
@@ -597,13 +642,18 @@ export class Assignment3 extends Scene {
 		const green = hex_color("#3ec64b");
         const blue = hex_color("#0000FF");
 		const gray = hex_color("#808080");
+		const black = hex_color("#000000");
         let model_transform = Mat4.identity();
 
 		for(let i = 0; i < map_width; i++) {
 			for(let j = 0; j < map_height; j++) {
 				let ij_transform = Mat4.identity().times(Mat4.translation(i*2, j*2, 0));
 				if(this.proc_gen.map[i][j] == 0) {
-					this.shapes.square.draw(context, program_state, ij_transform, this.materials.test.override({color: green}));
+					let tile_color = green;
+					if (i == this.exit_tile_i && j == this.exit_tile_j) {
+						tile_color = black;
+					}
+					this.shapes.square.draw(context, program_state, ij_transform, this.materials.test.override({color: tile_color}));
 					//this.shapes.square.draw(context, program_state, ij_transform.times(Mat4.translation(0,0,2)), this.materials.test.override({color: gray}));
 				}
 				let code = this.proc_gen.tiles[i][j];
@@ -648,6 +698,8 @@ export class Assignment3 extends Scene {
 		
 		this.handlePlayerCollision();
 
+		this.checkIfExitReached();
+
 
 		// Adjust firing timer if needed
 		if (this.time_to_next_fire > 0) {
@@ -657,7 +709,7 @@ export class Assignment3 extends Scene {
 		this.handleProjectileMovement();
 		this.handleProjectileCollision();
 		this.displayProjectiles(context, program_state);
-		console.log(this.projectiles);
+
 		
 
 		let camera = Mat4.look_at(vec3(this.player_x, this.player_y, 1), vec3(this.player_x + (5*Math.cos(this.player_angle_of_view)), this.player_y + (5*Math.sin(this.player_angle_of_view)), 1), vec3(0, 0, 1));
