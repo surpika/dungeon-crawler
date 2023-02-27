@@ -1,9 +1,10 @@
 import {defs, tiny} from './examples/common.js';
-import Proc_Gen from './proc-gen.js';
+import Proc_Gen from "./proc-gen.js";
 import {map_width, map_height} from './proc-gen.js';
+import {Shape_From_File} from "./examples/obj-file-demo.js";
 
 const {
-    Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene,
+    Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
 } = tiny;
 
 export class Assignment3 extends Scene {
@@ -22,7 +23,9 @@ export class Assignment3 extends Scene {
 			square: new defs.Square(),
             cube: new defs.Cube(),
             cylinder: new defs.Capped_Cylinder(15, 15),
-            // TODO:  Fill in as many additional shape instances as needed in this key/value table.
+			teapot: new Shape_From_File("assets/teapot.obj"),
+			goblin: new Shape_From_File("assets/goblin.OBJ"),
+			// TODO:  Fill in as many additional shape instances as needed in this key/value table.
             //        (Requirement 1)
         };
 
@@ -33,9 +36,17 @@ export class Assignment3 extends Scene {
             test2: new Material(new Gouraud_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#992828")}),
             ring: new Material(new Ring_Shader()),
+			dungeon_wall: new Material(new defs.Fake_Bump_Map(1), {
+				color: color(.8, .8, .8, 1),
+				ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/dungeon_wall.jpg") // Assets can only be in Powers of 2 (EX: 1024 x 1024)
+			}),
+			dungeon_floor: new Material(new defs.Textured_Phong(1), {
+				color: color(.894, .376, .267, 1),
+				ambient: .2, diffusivity: .5, specularity: .5, texture: new Texture("assets/floor.jpg")
+			}),
+		}
             // TODO:  Fill in as many additional material objects as needed in this key/value table.
             //        (Requirement 4)
-        }
 
         const  data_members = {
             player_transform: Mat4.identity(),
@@ -158,8 +169,9 @@ export class Assignment3 extends Scene {
     }
 	drawSquare(context, program_state, transform, translation, rotation, color) {
 			transform = transform.times(translation).times(rotation);
-			this.shapes.square.draw(context, program_state, transform, this.materials.test.override({color: color}));
+			this.shapes.square.draw(context, program_state, transform, this.materials.dungeon_wall);
 	}
+
 
 
 	handlePlayerMovement() {
@@ -710,7 +722,8 @@ export class Assignment3 extends Scene {
 		this.handleProjectileCollision();
 		this.displayProjectiles(context, program_state);
 
-		
+		//this.shapes.teapot.draw(context, program_state, Mat4.identity().times(Mat4.translation(this.player_x +2 ,this.player_y + 2,0)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)), this.materials.dungeon_floor);
+		//this.shapes.goblin.draw(context, program_state, Mat4.identity().times(Mat4.translation(this.player_x -2 ,this.player_y - 2,0)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)), this.materials.dungeon_floor);
 
 		let camera = Mat4.look_at(vec3(this.player_x, this.player_y, 1), vec3(this.player_x + (5*Math.cos(this.player_angle_of_view)), this.player_y + (5*Math.sin(this.player_angle_of_view)), 1), vec3(0, 0, 1));
 		program_state.set_camera(camera);

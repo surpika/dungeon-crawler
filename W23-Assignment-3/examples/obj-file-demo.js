@@ -154,3 +154,5 @@ export class Obj_File_Demo extends Scene {                           // **Obj_Fi
             + "</p><p>One of these teapots is lit with bump mapping.  Can you tell which one?</p>";
     }
 }
+
+export default Shape_From_File;
