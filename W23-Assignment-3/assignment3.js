@@ -29,7 +29,7 @@ export class Assignment3 extends Scene {
         // *** Materials
         this.materials = {
             test: new Material(new defs.Phong_Shader(),
-                {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
+                {ambient: .2, diffusivity: .2, specularity: .5, color: hex_color("#ffffff")}),
             test2: new Material(new Gouraud_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#992828")}),
             ring: new Material(new Ring_Shader()),
@@ -60,7 +60,6 @@ export class Assignment3 extends Scene {
 			time_to_next_fire: 0, // current time until another projectile can be fired
 			time_between_shots: 60, // minimum time until another projectile can be fired (60 -> 1 second)
 
-			
 
 			exit_tile_i: Math.floor(map_width / 2) - 1,
 			exit_tile_j: Math.floor(map_height / 2) + 1,
@@ -612,10 +611,43 @@ export class Assignment3 extends Scene {
 		}
 	}
 
+
+	// getTorchLight() {
+	// 	let model_transform = Mat4.identity();
+	// 	let torch_placement = Mat4.translation(this.player_x, this.player_y, .6);
+	// 	torch_placement = torch_placement.times(Mat4.translation(.8*Math.cos(this.player_angle_of_view + Math.PI/8), .8*Math.sin(this.player_angle_of_view + Math.PI/8),0));
+	// 	model_transform = model_transform.times(torch_placement);
+	// 	model_transform = model_transform.times(Mat4.scale(.04,.04,.4));
+	// 	model_transform = model_transform.times(Mat4.rotation(this.player_angle_of_view, 0, 0, 1));
+	// 	model_transform = model_transform.times(Mat4.translation(0,0,.2 + .02));
+	// 	let light_position = vec4(model_transform[0][3], model_transform[1][3], model_transform[2][3], 1);
+	// 	let light = new Light(light_position, color(1, 1, 1, 1), 100);
+	// 	light.attenuation = 0;
+	// 	return light;
+	// }
+
+	// displayTorch(context, program_state,) {
+	// 	let model_transform = Mat4.identity();
+	// 	let torch_placement = Mat4.translation(this.player_x, this.player_y, .6);
+	// 	torch_placement = torch_placement.times(Mat4.translation(.8*Math.cos(this.player_angle_of_view + Math.PI/8), .8*Math.sin(this.player_angle_of_view + Math.PI/8),0));
+	// 	model_transform = model_transform.times(torch_placement);
+	// 	console.log(model_transform);
+	// 	model_transform = model_transform.times(Mat4.scale(.04,.04,.4));
+	// 	model_transform = model_transform.times(Mat4.rotation(this.player_angle_of_view, 0, 0, 1));
+	// 	let brown = hex_color("#402f00");
+	// 	this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: brown}));
+	// 	model_transform = model_transform.times(Mat4.translation(0,0,.2 + .02));
+	// 	let orange = hex_color("#ed7d1a");
+	// 	this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: orange, ambient:1}));
+
+	// }
 	
 	
 
     display(context, program_state) {
+
+
+		
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
         if (!context.scratchpad.controls) {
@@ -630,10 +662,32 @@ export class Assignment3 extends Scene {
         // TODO: Create Planets (Requirement 1)
         // this.shapes.[XXX].draw([XXX]) // <--example
 
-        // TODO: Lighting (Requirement 2)
+
+
+
+
+
+		
+
+
+		// The parameters of the Light are: position, color, size
         const light_position = vec4(map_width - 1, map_height - 1, 1, 1);
-        // The parameters of the Light are: position, color, size
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
+
+
+		// let torch_light = this.getTorchLight(context,program_state);
+		// program_state.lights = [torch_light];
+
+		
+		// this.displayTorch(context, program_state);
+
+
+
+
+
+
+
+		
 
         // TODO:  Fill in matrix operations and drawing code to draw the solar system scene (Requirements 3 and 4)
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
@@ -663,9 +717,9 @@ export class Assignment3 extends Scene {
 				if(code.charAt(1) == '1') {
 					this.drawSquare(context, program_state, ij_transform, Mat4.translation(-1,0,1), Mat4.rotation(Math.PI/2,0,1,0), pink);}
 				if(code.charAt(2) == '1') {
-					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,-1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
+					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,-1,1), Mat4.rotation(Math.PI/2 + Math.PI,1,0,0), pink);}
 				if(code.charAt(3) == '1') {
-					this.drawSquare(context, program_state, ij_transform, Mat4.translation(1,0,1), Mat4.rotation(Math.PI/2,0,1,0), pink);}
+					this.drawSquare(context, program_state, ij_transform, Mat4.translation(1,0,1), Mat4.rotation(Math.PI/2 + Math.PI,0,1,0), pink);}
 			}
 		}
 
@@ -710,10 +764,18 @@ export class Assignment3 extends Scene {
 		this.handleProjectileCollision();
 		this.displayProjectiles(context, program_state);
 
+
+		
+
 		
 
 		let camera = Mat4.look_at(vec3(this.player_x, this.player_y, 1), vec3(this.player_x + (5*Math.cos(this.player_angle_of_view)), this.player_y + (5*Math.sin(this.player_angle_of_view)), 1), vec3(0, 0, 1));
 		program_state.set_camera(camera);
+
+
+		console.log(program_state.lights);
+
+
     }
 
 	
