@@ -7,7 +7,7 @@ const map_width = 30;
 const map_height = 30;
 const map_density = 0.5// minimum percentage of empty tiles
 const entropy = 0.5; // percent of time that snake will change direction.
-const enemy_density = 0.01;
+const enemy_density = 1.0/450.0//0.01;
 
 const Proc_Gen =
 	class Proc_Gen {
@@ -41,6 +41,57 @@ const Proc_Gen =
 				count++;
 			}
 		}
+
+		setEnemyTiles() {
+			// Iterate through all current enemies
+			for (let i = 0; i < this.enemies.length; i++) {
+				// Get current enemy
+				let enemy = this.enemies[i];
+
+				// Get current enemy tile
+				let new_tile = enemy.current_tile();
+
+				// If null returned, enemy tile has not changed
+				if (new_tile === null) {
+					continue;
+				}
+
+				// Enemy tile has changed
+				
+				// Remove enemy from previous tile
+				let enemies_at_prev_tile = this.enemy_grid[enemy.tile_i][enemy.tile_j];
+				enemies_at_prev_tile = enemies_at_prev_tile.filter(item => item !== enemy);
+				this.enemy_grid[enemy.tile_i][enemy.tile_j] = enemies_at_prev_tile;
+
+				// Change enemy tile coordinates
+				enemy.tile_i = new_tile[0];
+				enemy.tile_j = new_tile[1];
+
+				// Add enemy to new tile
+				this.enemy_grid[enemy.tile_i][enemy.tile_j].push(enemy);
+				
+			}
+		}
+
+		getEnemiesAround(tile_i, tile_j) {
+			let enemies = [];
+			let directions = [[0,0],[1,0],[0,1],[-1,0],[0,-1], [1,1], [1,-1],[-1,1],[-1,-1]];
+
+			for (let i = 0; i < directions.length; i++) {
+				let d = directions[i];
+
+				let tile_i_check = tile_i + d[0];
+				let tile_j_check = tile_j + d[1];
+
+				if (tile_i_check >= 0 && tile_i_check < map_width && tile_j_check >= 0 && tile_j_check < map_height) {
+					enemies = enemies.concat(this.enemy_grid[tile_i_check][tile_j_check]);
+				}
+			}
+
+			return enemies;
+
+		}
+
 
 		wall_fill() {
 			for (let i = 0; i < map_width; i++) {

@@ -741,11 +741,53 @@ export class Assignment3 extends Scene {
 		}
 		
 	}
+
+	checkCirclesCollision(x1,y1,r1,x2,y2,r2) {
+
+		let distance = Math.sqrt( (x1-x2)**2 + (y1-y2)**2 );
+		let total_radius = r1 + r2;
+
+		return distance < total_radius;
+		
+	}
+
+	
 	
 	performEnemyActions() {
+
+		// Set current tiles of each enemy
+		this.proc_gen.setEnemyTiles();
+
+		// Iterate through all enemies
 		for (let i = 0; i < this.proc_gen.enemies.length; i++) {
+
+			// Get current enemy
 			let enemy = this.proc_gen.enemies[i];
-			enemy.performAction();
+
+			// Perform enemy action
+			enemy.performAction(this.player_x, this.player_y);
+
+			// Check for collision with player
+			let collide = this.checkCirclesCollision(this.player_x, this.player_y, this.player_radius, enemy.x, enemy.y, enemy.radius);
+			if (collide) {
+				enemy.x = enemy.tick_initial_x;
+				enemy.y = enemy.tick_initial_y;
+				continue;
+			}
+
+			// Check for collision with other enemies
+			let enemies_around_this_enemy = this.proc_gen.getEnemiesAround(enemy.tile_i, enemy.tile_j);
+			enemies_around_this_enemy = enemies_around_this_enemy.filter(item => item !== enemy);
+
+			for (let close_enemy of enemies_around_this_enemy) {
+				collide = this.checkCirclesCollision(enemy.x, enemy.y, enemy.radius, close_enemy.x, close_enemy.y, close_enemy.radius);
+				if (collide) {
+					enemy.x = enemy.tick_initial_x;
+					enemy.y = enemy.tick_initial_y;
+				}
+			}
+			
+			
 		}
 	}
 
