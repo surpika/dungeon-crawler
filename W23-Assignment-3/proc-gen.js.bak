@@ -40,6 +40,8 @@ const Proc_Gen =
 				this.enemies.push(new_enemy);
 				count++;
 			}
+			console.log(count);
+			console.log(this.empty_tiles.length * enemy_density);
 		}
 
 		wall_fill() {

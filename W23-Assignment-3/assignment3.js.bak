@@ -1,9 +1,11 @@
 import {defs, tiny} from './examples/common.js';
-import Proc_Gen from './proc-gen.js';
+import Proc_Gen from "./proc-gen.js";
 import {map_width, map_height} from './proc-gen.js';
+import {Shape_From_File} from "./examples/obj-file-demo.js";
+import Enemy from "./enemy.js";
 
 const {
-    Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene,
+    Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
 } = tiny;
 
 export class Assignment3 extends Scene {
@@ -11,7 +13,7 @@ export class Assignment3 extends Scene {
         // constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
         super();
 		
-		this.proc_gen = new Proc_Gen();
+		this.proc_gen = new Proc_Gen(this);
 
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
@@ -22,7 +24,9 @@ export class Assignment3 extends Scene {
 			square: new defs.Square(),
             cube: new defs.Cube(),
             cylinder: new defs.Capped_Cylinder(15, 15),
-            // TODO:  Fill in as many additional shape instances as needed in this key/value table.
+			teapot: new Shape_From_File("assets/teapot.obj"),
+			goblin: new Shape_From_File("assets/goblin.OBJ"),
+			// TODO:  Fill in as many additional shape instances as needed in this key/value table.
             //        (Requirement 1)
         };
 
@@ -33,9 +37,17 @@ export class Assignment3 extends Scene {
             test2: new Material(new Gouraud_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#992828")}),
             ring: new Material(new Ring_Shader()),
+			dungeon_wall: new Material(new defs.Fake_Bump_Map(1), {
+				color: color(.8, .8, .8, 1),
+				ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/dungeon_wall.jpg") // Assets can only be in Powers of 2 (EX: 1024 x 1024)
+			}),
+			dungeon_floor: new Material(new defs.Textured_Phong(1), {
+				color: color(.894, .376, .267, 1),
+				ambient: .2, diffusivity: .5, specularity: .5, texture: new Texture("assets/floor.jpg")
+			}),
+		}
             // TODO:  Fill in as many additional material objects as needed in this key/value table.
             //        (Requirement 4)
-        }
 
         const  data_members = {
             player_transform: Mat4.identity(),
@@ -50,8 +62,20 @@ export class Assignment3 extends Scene {
 			tick_initial_player_y: map_height - 1,
 			player_angle_of_view: Math.PI / 2,
 			player_radius: 0.3,
-
 			rotation_magnitude: 0,
+			
+			player_score: 0,
+			current_floor: 1,
+
+			projectiles: [], // [projectile_x, projectile_y, angle_of_direction]
+			projectile_speed: .3,
+			time_to_next_fire: 0, // current time until another projectile can be fired
+			time_between_shots: 60, // minimum time until another projectile can be fired (60 -> 1 second)
+
+			
+
+			exit_tile_i: Math.floor(map_width / 2) - 1,
+			exit_tile_j: Math.floor(map_height / 2) + 1,
         }
         Object.assign(this, data_members);
 
@@ -80,6 +104,16 @@ export class Assignment3 extends Scene {
         this.new_line();
         this.key_triggered_button("Attach to moon", ["Control", "m"], () => this.attached = () => this.moon);
 
+		
+		this.key_triggered_button("Fire Projectile", [" "], () => {
+			if (this.time_to_next_fire <= 0) {
+				let new_projectile = [this.player_x, this.player_y, this.player_angle_of_view];
+				this.projectiles.push(new_projectile);
+				console.log(this.projectiles);
+				this.time_to_next_fire = this.time_between_shots
+			}
+        });
+		
         this.key_triggered_button("Go up,", ["ArrowUp"], () => {
             this.udSpeed = .1
             this.did_ud_move = true;
@@ -136,8 +170,9 @@ export class Assignment3 extends Scene {
     }
 	drawSquare(context, program_state, transform, translation, rotation, color) {
 			transform = transform.times(translation).times(rotation);
-			this.shapes.square.draw(context, program_state, transform, this.materials.test.override({color: color}));
+			this.shapes.square.draw(context, program_state, transform, this.materials.dungeon_wall);
 	}
+
 
 
 	handlePlayerMovement() {
@@ -420,7 +455,7 @@ export class Assignment3 extends Scene {
 			if(this.player_y < bottom_boundary) {
 				this.player_y = bottom_boundary;
 			}
-		} else if(tile.charAt(3) == '1' && tile.charAt(0) == '1') { //right and top
+		} if(tile.charAt(3) == '1' && tile.charAt(0) == '1') { //right and top
 			console.log("topright");
 			let right_wall_x = player_tile_i * 2 + 1;
 			let top_wall_y = player_tile_j * 2 + 1;
@@ -504,6 +539,139 @@ export class Assignment3 extends Scene {
 		this.handlePlayerCornerCollision();
 	}
 
+
+	handleProjectileMovement() {
+		for (let i = 0; i < this.projectiles.length; i++) {
+			let projectile = this.projectiles[i];
+			let projectile_x = projectile[0];
+			let projectile_y = projectile[1];
+			let projectile_angle = projectile[2];
+			let dx = this.projectile_speed * Math.cos(projectile_angle);
+			let dy = this.projectile_speed * Math.sin(projectile_angle);
+			let new_x = projectile_x + dx;
+			let new_y = projectile_y + dy;
+			this.projectiles[i] = [new_x, new_y, projectile_angle];
+		}
+	}
+
+	// NOT FULLY TESTED YET
+	
+	handleProjectileCollision() {
+		for (let i = 0; i < this.projectiles.length; i++) {
+			let projectile = this.projectiles[i];
+			let projectile_x = projectile[0];
+			let projectile_y = projectile[1];
+			let tile_i = Math.floor((this.player_x + 1) / 2);
+			let tile_j = Math.floor((this.player_y + 1) / 2);
+			let tile = this.proc_gen.tiles[tile_i][tile_j];
+
+			if (tile_i < 0 || tile_i >= map_width || tile_j < 0 || tile_j >= map_height) {
+				//remove projectile
+				this.projectiles = this.projectiles.splice(i, 1);
+			} else if (this.proc_gen.map[tile_i][tile_j] == 1) {
+				//remove projectile
+				this.projectiles = this.projectiles.splice(i, 1);
+			}
+		}
+	}
+
+	
+	displayProjectiles(context, program_state) {
+		for (let i = 0; i < this.projectiles.length; i++) {
+			let projectile = this.projectiles[i];
+			console.log(projectile);
+			let projectile_x = projectile[0];
+			let projectile_y = projectile[1];
+			let model_transform = Mat4.identity().times(Mat4.translation(projectile_x,projectile_y,1)).times(Mat4.scale(.2,.2,.2));
+			this.shapes.sphere.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#2c79f5")}));
+		}
+	}
+
+
+	
+	startNewFloor() {
+		
+		this.score += 20; // Score increased by reaching new floor
+		this.current_floor += 1; // Current floor increased by one
+
+		// Reset player coordinates and other movement variables
+		this.player_x = map_width - 1;
+		this.player_y = map_height - 1;
+		this.tick_initial_player_x = map_width - 1;
+		this.tick_initial_player_y = map_height - 1;
+		this.player_angle_of_view = Math.PI / 2;
+		this.rotation_magnitude = 0;
+
+		// Reset projectiles and firing timer
+		this.projectiles = []; // [projectile_x, projectile_y, angle_of_direction]
+		this.time_to_next_fire = 0; // current time until another projectile can be fired
+
+		// Generate new maze
+		// MIGHT WANT TO VERIFY WE DON'T HAVE TO DELETE PREVIOUS OBJECT
+		this.proc_gen = new Proc_Gen();
+
+		// Generate new exit tile
+		this.exit_tile_i = Math.floor(map_width / 2) - 1;
+		this.exit_tile_j = Math.floor(map_height / 2) + 1;
+	}
+	
+	checkIfExitReached() {
+		let player_tile_i = Math.floor((this.player_x + 1) / 2);
+		let player_tile_j = Math.floor((this.player_y + 1) / 2);
+
+		if (player_tile_i == this.exit_tile_i && player_tile_j == this.exit_tile_j) {
+			// Exit reached
+			this.startNewFloor()
+		}
+	}
+	
+	handleEnemyCollision() {
+		// Find i and j indices of tile that player is in
+		let enemy_tile_i = Math.floor((enemy.x + 1) / 2);
+		let enemy_tile_j = Math.floor((enemy.y + 1) / 2);
+		let v = [[0,0], [0,1], [1,0], [0,-1], [-1,0]];
+		let local_walls = [];
+		for(let i  = 0; i < 5; i ++) {
+			let tile_walls = this.getWallsInTile(player_tile_i + v[i][0], player_tile_j + v[i][1]);
+			local_walls = local_walls.concat(tile_walls);
+		}
+		
+		//result: [[wall_x, wall_y, wall_type], "collision_type"]
+		let result = this.getWallCollisions(local_walls, this.player_x, this.player_y, this.player_radius); //get wall collisions
+		
+		//below: resolve collision, first check whether line or corner or none
+		
+		let new_player_x = this.player_x;
+		let new_player_y = this.player_y;
+		if(result[1] == "line") {
+			for (let i = 0; i < result[0].length; i++) {
+				let wall = result[0][i];
+				let new_coords = this.resolveLineCollision(wall, new_player_x, new_player_y, this.player_radius);
+				new_player_x = new_coords[0];
+				new_player_y = new_coords[1];
+				console.log(new_coords);
+			}
+		}
+		else if(result[1] == "corner") {
+			let wall = result[0];
+			let new_coords = this.resolveCornerCollision(wall, this.player_x, this.player_y, this.player_radius);
+			new_player_x = new_coords[0];
+			new_player_y = new_coords[1];
+		}
+		else if(result[1] != "no collision") {console.log("invalid wall collision type");}
+		this.player_x = new_player_x;
+		this.player_y = new_player_y;
+		
+		this.handlePlayerCornerCollision();
+	}
+	
+	performEnemyActions() {
+		for (let i = 0; i < this.proc_gen.enemies.length; i++) {
+			let enemy = this.proc_gen.enemies[i];
+			enemy.performAction();
+		}
+	}
+
     display(context, program_state) {
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
@@ -531,13 +699,18 @@ export class Assignment3 extends Scene {
 		const green = hex_color("#3ec64b");
         const blue = hex_color("#0000FF");
 		const gray = hex_color("#808080");
+		const black = hex_color("#000000");
         let model_transform = Mat4.identity();
 
 		for(let i = 0; i < map_width; i++) {
 			for(let j = 0; j < map_height; j++) {
 				let ij_transform = Mat4.identity().times(Mat4.translation(i*2, j*2, 0));
 				if(this.proc_gen.map[i][j] == 0) {
-					this.shapes.square.draw(context, program_state, ij_transform, this.materials.test.override({color: green}));
+					let tile_color = green;
+					if (i == this.exit_tile_i && j == this.exit_tile_j) {
+						tile_color = black;
+					}
+					this.shapes.square.draw(context, program_state, ij_transform, this.materials.test.override({color: tile_color}));
 					//this.shapes.square.draw(context, program_state, ij_transform.times(Mat4.translation(0,0,2)), this.materials.test.override({color: gray}));
 				}
 				let code = this.proc_gen.tiles[i][j];
@@ -554,18 +727,18 @@ export class Assignment3 extends Scene {
 		}
 
 
-        let cylinderTransform = this.player_transform;
+        //let cylinderTransform = this.player_transform;
         //cylinderTransform = cylinderTransform.times(Mat4.translation(-cylinderTransform[0], -cylinderTransform[1], 0))
-        cylinderTransform = cylinderTransform.times(Mat4.scale(1,1, 1))
-        cylinderTransform = this.cylinder_movement(program_state, cylinderTransform);
-        cylinderTransform = this.draw_cylinder(context, program_state, cylinderTransform, blue);
-        this.player_transform = cylinderTransform;
+        //cylinderTransform = cylinderTransform.times(Mat4.scale(1,1, 1))
+        //cylinderTransform = this.cylinder_movement(program_state, cylinderTransform);
+        //ylinderTransform = this.draw_cylinder(context, program_state, cylinderTransform, blue);
+        //this.player_transform = cylinderTransform;
 
 		// model_transform = Mat4.identity().times(Mat4.translation(map_width,map_height,0));
 		// this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("fcba03")}));
 
-		model_transform = Mat4.identity();
-		this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("fcba03")}));
+		//model_transform = Mat4.identity();
+		//this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("fcba03")}));
 
 		//save player's position in case they need to be moved back due to collision
 		this.tick_initial_player_x = this.player_x;
@@ -582,19 +755,34 @@ export class Assignment3 extends Scene {
 		
 		this.handlePlayerCollision();
 
+		this.checkIfExitReached();
+
+
+		// Adjust firing timer if needed
+		if (this.time_to_next_fire > 0) {
+			this.time_to_next_fire -= 1;
+		}
+
+		this.handleProjectileMovement();
+		this.handleProjectileCollision();
+		this.displayProjectiles(context, program_state);
+		
+		this.performEnemyActions();
+		
+		//display enemies
+		for (let i = 0; i < this.proc_gen.enemies.length; i++) {
+			let enemy = this.proc_gen.enemies[i];
+			let enemy_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.75)).times(Mat4.scale(enemy.radius, enemy.radius, 1.5));
+			this.shapes.cylinder.draw(context, program_state, enemy_transform, this.materials.test.override({color: hex_color("ff0000")}));
+		}
+
+		//this.shapes.teapot.draw(context, program_state, Mat4.identity().times(Mat4.translation(this.player_x +2 ,this.player_y + 2,0)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)), this.materials.dungeon_floor);
+		//this.shapes.goblin.draw(context, program_state, Mat4.identity().times(Mat4.translation(this.player_x -2 ,this.player_y - 2,0)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)), this.materials.dungeon_floor);
+
 		let camera = Mat4.look_at(vec3(this.player_x, this.player_y, 1), vec3(this.player_x + (5*Math.cos(this.player_angle_of_view)), this.player_y + (5*Math.sin(this.player_angle_of_view)), 1), vec3(0, 0, 1));
 		program_state.set_camera(camera);
     }
 
-
-	// HELPER FUNCTIONS
-
-	// Given center and radius of two circles
-	// Return true if they overlap, otherwise false
-	do_circles_collide(x1,y1,r1,x2,y2,r2) {
-	    distance_of_centers = Math.sqrt((x1-x2)**2 + (y1-y2)**2);
-	    return distance_of_centers < r1 + r2;
-	}
 	
 }
 

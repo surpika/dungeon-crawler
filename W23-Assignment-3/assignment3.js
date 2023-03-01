@@ -2,6 +2,7 @@ import {defs, tiny} from './examples/common.js';
 import Proc_Gen from "./proc-gen.js";
 import {map_width, map_height} from './proc-gen.js';
 import {Shape_From_File} from "./examples/obj-file-demo.js";
+import Enemy from "./enemy.js";
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
@@ -12,7 +13,7 @@ export class Assignment3 extends Scene {
         // constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
         super();
 		
-		this.proc_gen = new Proc_Gen();
+		this.proc_gen = new Proc_Gen(this);
 
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
@@ -623,9 +624,53 @@ export class Assignment3 extends Scene {
 			this.startNewFloor()
 		}
 	}
-
 	
+	handleEnemyCollision() {
+		// Find i and j indices of tile that player is in
+		let enemy_tile_i = Math.floor((enemy.x + 1) / 2);
+		let enemy_tile_j = Math.floor((enemy.y + 1) / 2);
+		let v = [[0,0], [0,1], [1,0], [0,-1], [-1,0]];
+		let local_walls = [];
+		for(let i  = 0; i < 5; i ++) {
+			let tile_walls = this.getWallsInTile(enemy_tile_i + v[i][0], enemy_tile_j + v[i][1]);
+			local_walls = local_walls.concat(tile_walls);
+		}
+		
+		//result: [[wall_x, wall_y, wall_type], "collision_type"]
+		let result = this.getWallCollisions(local_walls, this.player_x, this.player_y, this.player_radius); //get wall collisions
+		
+		//below: resolve collision, first check whether line or corner or none
+		
+		let new_player_x = this.player_x;
+		let new_player_y = this.player_y;
+		if(result[1] == "line") {
+			for (let i = 0; i < result[0].length; i++) {
+				let wall = result[0][i];
+				let new_coords = this.resolveLineCollision(wall, new_player_x, new_player_y, this.player_radius);
+				new_player_x = new_coords[0];
+				new_player_y = new_coords[1];
+				console.log(new_coords);
+			}
+		}
+		else if(result[1] == "corner") {
+			let wall = result[0];
+			let new_coords = this.resolveCornerCollision(wall, this.player_x, this.player_y, this.player_radius);
+			new_player_x = new_coords[0];
+			new_player_y = new_coords[1];
+		}
+		else if(result[1] != "no collision") {console.log("invalid wall collision type");}
+		this.player_x = new_player_x;
+		this.player_y = new_player_y;
+		
+		this.handlePlayerCornerCollision();
+	}
 	
+	performEnemyActions() {
+		for (let i = 0; i < this.proc_gen.enemies.length; i++) {
+			let enemy = this.proc_gen.enemies[i];
+			enemy.performAction();
+		}
+	}
 
     display(context, program_state) {
         // display():  Called once per frame of animation.
@@ -682,18 +727,18 @@ export class Assignment3 extends Scene {
 		}
 
 
-        let cylinderTransform = this.player_transform;
+        //let cylinderTransform = this.player_transform;
         //cylinderTransform = cylinderTransform.times(Mat4.translation(-cylinderTransform[0], -cylinderTransform[1], 0))
-        cylinderTransform = cylinderTransform.times(Mat4.scale(1,1, 1))
-        cylinderTransform = this.cylinder_movement(program_state, cylinderTransform);
-        cylinderTransform = this.draw_cylinder(context, program_state, cylinderTransform, blue);
-        this.player_transform = cylinderTransform;
+        //cylinderTransform = cylinderTransform.times(Mat4.scale(1,1, 1))
+        //cylinderTransform = this.cylinder_movement(program_state, cylinderTransform);
+        //ylinderTransform = this.draw_cylinder(context, program_state, cylinderTransform, blue);
+        //this.player_transform = cylinderTransform;
 
 		// model_transform = Mat4.identity().times(Mat4.translation(map_width,map_height,0));
 		// this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("fcba03")}));
 
-		model_transform = Mat4.identity();
-		this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("fcba03")}));
+		//model_transform = Mat4.identity();
+		//this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("fcba03")}));
 
 		//save player's position in case they need to be moved back due to collision
 		this.tick_initial_player_x = this.player_x;
@@ -721,6 +766,15 @@ export class Assignment3 extends Scene {
 		this.handleProjectileMovement();
 		this.handleProjectileCollision();
 		this.displayProjectiles(context, program_state);
+		
+		this.performEnemyActions();
+		
+		//display enemies
+		for (let i = 0; i < this.proc_gen.enemies.length; i++) {
+			let enemy = this.proc_gen.enemies[i];
+			let enemy_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.75)).times(Mat4.scale(enemy.radius, enemy.radius, 1.5));
+			this.shapes.cylinder.draw(context, program_state, enemy_transform, this.materials.test.override({color: hex_color("ff0000")}));
+		}
 
 		//this.shapes.teapot.draw(context, program_state, Mat4.identity().times(Mat4.translation(this.player_x +2 ,this.player_y + 2,0)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)), this.materials.dungeon_floor);
 		//this.shapes.goblin.draw(context, program_state, Mat4.identity().times(Mat4.translation(this.player_x -2 ,this.player_y - 2,0)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)), this.materials.dungeon_floor);
