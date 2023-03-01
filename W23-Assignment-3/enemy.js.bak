@@ -29,7 +29,7 @@ const Enemy =
 			this.y += this.speed * Math.sin(this.angle_of_view);
 		}
 		
-		face_at(x, y) { this.angle_of_view = Math.atan2((y - this.y)/(x - this.x)); }
+		face_at(x, y) { this.angle_of_view = Math.atan2(y - this.y,x - this.x); }
 		
 		performAction() {
 			if(this.follow_player) {

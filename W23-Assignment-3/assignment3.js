@@ -332,7 +332,6 @@ export class Assignment3 extends Scene {
 		for (let i = 0; i < walls.length; i++) {
 			let c = this.checkCornerCollision(walls[i], actor_x, actor_y, actor_radius);
 			if(c) {
-				console.log("colliding with wall corner: " + walls[i]);
 				return walls[i];
 			}
 		}
@@ -343,7 +342,6 @@ export class Assignment3 extends Scene {
 		for (let i = 0; i < walls.length; i++) {
 			let c = this.checkLineCollision(walls[i], actor_x, actor_y, actor_radius);
 			if(c) {
-				console.log("colliding with wall line: " + walls[i]);
 				collisions.push(walls[i]);
 				if(collisions.length == 2) {return collisions;}
 			}
@@ -354,7 +352,7 @@ export class Assignment3 extends Scene {
 	//return [[wall_x, wall_y, wall_type], "collision_type"];
 	getWallCollisions(walls, actor_x, actor_y, actor_radius) {
 		let lines_collided = this.getLineCollisions(walls, actor_x, actor_y, actor_radius);
-		if(lines_collided.length == 0) { //lines_collided === undefined?
+		if(lines_collided.length == 0) {
 			let corner_collided = this.getCornerCollisions(walls, actor_x, actor_y, actor_radius);
 			if(!(corner_collided === undefined)) {
 				return [corner_collided, "corner"];
@@ -369,7 +367,7 @@ export class Assignment3 extends Scene {
 		let x = wall[0];
 		let y = wall[1];
 		let wall_type = wall[2];
-		let new_coords = [this.player_x, this.player_y];
+		let new_coords = [actor_x, actor_y];
 		if(wall_type == 't') {new_coords[1] = y - actor_radius;}
 		if(wall_type == 'l') {new_coords[0] = x + actor_radius;}
 		if(wall_type == 'b') {new_coords[1] = y + actor_radius;}
@@ -403,11 +401,8 @@ export class Assignment3 extends Scene {
 			corner_x = wall[0];
 			corner_y = wall[1] + 1;
 		} else {console.log("invalid wall type");}
-		console.log("corner: " + [corner_x, corner_y]);
 		let normalized = this.getNormalizedVectorFromCoords(actor_x, actor_y, corner_x, corner_y);
-		console.log(normalized);
 		let new_actor_coords = [corner_x + normalized[0] * actor_radius, corner_y + normalized[1] * actor_radius];
-		console.log(new_actor_coords);
 		return new_actor_coords;
 	}
 	
@@ -420,7 +415,6 @@ export class Assignment3 extends Scene {
 		}
 		let tile = this.proc_gen.tiles[player_tile_i][player_tile_j];
 		if(tile.charAt(0) == '1' && tile.charAt(1) == '1') { //top and left
-			console.log("topleft");
 			let top_wall_y = player_tile_j * 2 + 1;
 			let left_wall_x = player_tile_i * 2 - 1;
 			let top_boundary = top_wall_y - this.player_radius;
@@ -432,7 +426,6 @@ export class Assignment3 extends Scene {
 				this.player_y = top_boundary;
 			}
 		} if(tile.charAt(1) == '1' && tile.charAt(2) == '1') { //left and bottom
-			console.log("bottomleft");
 			let left_wall_x = player_tile_i * 2 - 1;
 			let bottom_wall_y = player_tile_j * 2 -1;
 			let left_boundary = left_wall_x + this.player_radius;
@@ -444,7 +437,6 @@ export class Assignment3 extends Scene {
 				this.player_y = bottom_boundary;
 			}
 		} if(tile.charAt(2) == '1' && tile.charAt(3) == '1') { //bottom and right
-			console.log("bottomright");
 			let right_wall_x = player_tile_i * 2 + 1;
 			let bottom_wall_y = player_tile_j * 2 -1;
 			let right_boundary = right_wall_x - this.player_radius;
@@ -456,7 +448,6 @@ export class Assignment3 extends Scene {
 				this.player_y = bottom_boundary;
 			}
 		} if(tile.charAt(3) == '1' && tile.charAt(0) == '1') { //right and top
-			console.log("topright");
 			let right_wall_x = player_tile_i * 2 + 1;
 			let top_wall_y = player_tile_j * 2 + 1;
 			let right_boundary = right_wall_x - this.player_radius;
@@ -523,7 +514,6 @@ export class Assignment3 extends Scene {
 				let new_coords = this.resolveLineCollision(wall, new_player_x, new_player_y, this.player_radius);
 				new_player_x = new_coords[0];
 				new_player_y = new_coords[1];
-				console.log(new_coords);
 			}
 		}
 		else if(result[1] == "corner") {
@@ -625,44 +615,131 @@ export class Assignment3 extends Scene {
 		}
 	}
 	
-	handleEnemyCollision() {
-		// Find i and j indices of tile that player is in
+	handleEnemyInnerCornerCollision(enemy) {
 		let enemy_tile_i = Math.floor((enemy.x + 1) / 2);
 		let enemy_tile_j = Math.floor((enemy.y + 1) / 2);
+		if(enemy_tile_i < 0 || enemy_tile_i > 2*map_width/2 - 1 || enemy_tile_j < 0 || enemy_tile_j > 2*map_height/2 - 1) {
+			//this.printCollisionDebugOutput(player_tile_i, player_tile_j);
+			return;
+		}
+		let tile = this.proc_gen.tiles[enemy_tile_i][enemy_tile_j];
+		if(tile.charAt(0) == '1' && tile.charAt(1) == '1') { //top and left
+			let top_wall_y = enemy_tile_j * 2 + 1;
+			let left_wall_x = enemy_tile_i * 2 - 1;
+			let top_boundary = top_wall_y - enemy.radius;
+			let left_boundary = left_wall_x + enemy.radius;
+			if(enemy.x < left_boundary) {
+				enemy.x = left_boundary;
+			}
+			if(enemy.y > top_boundary) {
+				enemy.y = top_boundary;
+			}
+		} if(tile.charAt(1) == '1' && tile.charAt(2) == '1') { //left and bottom
+			let left_wall_x = enemy_tile_i * 2 - 1;
+			let bottom_wall_y = enemy_tile_j * 2 -1;
+			let left_boundary = left_wall_x + enemy.radius;
+			let bottom_boundary = bottom_wall_y + enemy.radius;
+			if(enemy.x < left_boundary) {
+				enemy.x = left_boundary;
+			}
+			if(enemy.y < bottom_boundary) {
+				enemy.y = bottom_boundary;
+			}
+		} if(tile.charAt(2) == '1' && tile.charAt(3) == '1') { //bottom and right
+			let right_wall_x = enemy_tile_i * 2 + 1;
+			let bottom_wall_y = enemy_tile_j * 2 -1;
+			let right_boundary = right_wall_x - enemy.radius;
+			let bottom_boundary = bottom_wall_y + enemy.radius;
+			if(enemy.x > right_boundary) {
+				enemy.x = right_boundary;
+			}
+			if(enemy.y < bottom_boundary) {
+				enemy.y = bottom_boundary;
+			}
+		} if(tile.charAt(3) == '1' && tile.charAt(0) == '1') { //right and top
+			let right_wall_x = enemy_tile_i * 2 + 1;
+			let top_wall_y = enemy_tile_j * 2 + 1;
+			let right_boundary = right_wall_x - enemy.radius;
+			let top_boundary = top_wall_y - enemy.radius;
+			if(enemy.x > right_boundary) {
+				enemy.x = right_boundary;
+			}
+			if(enemy.y > top_boundary) {
+				enemy.y = top_boundary;
+			}
+		}
+	}
+	
+	handleEnemyCornerCollision(enemy) {
+		// Find i and j indices of tile that enemy is in
+		let player_tile_i = Math.floor((enemy.x + 1) / 2);
+		let player_tile_j = Math.floor((enemy.y + 1) / 2);
 		let v = [[0,0], [0,1], [1,0], [0,-1], [-1,0]];
 		let local_walls = [];
 		for(let i  = 0; i < 5; i ++) {
-			let tile_walls = this.getWallsInTile(enemy_tile_i + v[i][0], enemy_tile_j + v[i][1]);
+			let tile_walls = this.getWallsInTile(player_tile_i + v[i][0], player_tile_j + v[i][1]);
 			local_walls = local_walls.concat(tile_walls);
 		}
 		
 		//result: [[wall_x, wall_y, wall_type], "collision_type"]
-		let result = this.getWallCollisions(local_walls, this.player_x, this.player_y, this.player_radius); //get wall collisions
+		let wall = this.getCornerCollisions(local_walls, enemy.x, enemy.y, enemy.radius); //get corner collisions
 		
-		//below: resolve collision, first check whether line or corner or none
+		if(!(wall === undefined)) {
+			let new_x = enemy.x;
+			let new_y = enemy.y;
+			let new_coords = this.resolveCornerCollision(wall, enemy.x, enemy.y, enemy.radius);
+			new_x = new_coords[0];
+			new_y = new_coords[1];
+
+			enemy.x = new_x;
+			enemy.y = new_y;
+		}
 		
-		let new_player_x = this.player_x;
-		let new_player_y = this.player_y;
-		if(result[1] == "line") {
-			for (let i = 0; i < result[0].length; i++) {
-				let wall = result[0][i];
-				let new_coords = this.resolveLineCollision(wall, new_player_x, new_player_y, this.player_radius);
-				new_player_x = new_coords[0];
-				new_player_y = new_coords[1];
-				console.log(new_coords);
+		//below: resolve corner collision
+		this.handleEnemyInnerCornerCollision(enemy);
+	}
+	
+	handleEnemyCollision() {
+		for(let i = 0; i < this.proc_gen.enemies.length; i ++) {
+			let enemy = this.proc_gen.enemies[i];
+			// Find i and j indices of tile that enemy is in
+			let enemy_tile_i = Math.floor((enemy.x + 1) / 2);
+			let enemy_tile_j = Math.floor((enemy.y + 1) / 2);
+			let v = [[0,0], [0,1], [1,0], [0,-1], [-1,0]];
+			let local_walls = [];
+			for(let i  = 0; i < 5; i ++) {
+				let tile_walls = this.getWallsInTile(enemy_tile_i + v[i][0], enemy_tile_j + v[i][1]);
+				local_walls = local_walls.concat(tile_walls);
 			}
+			
+			//result: [[wall_x, wall_y, wall_type], "collision_type"]
+			let result = this.getWallCollisions(local_walls, enemy.x, enemy.y, enemy.radius); //get wall collisions
+			
+			//below: resolve collision, first check whether line or corner or none
+			
+			let new_x = enemy.x;
+			let new_y = enemy.y;
+			if(result[1] == "line") {
+				for (let i = 0; i < result[0].length; i++) {
+					let wall = result[0][i];
+					let new_coords = this.resolveLineCollision(wall, new_x, new_y, enemy.radius);
+					new_x = new_coords[0];
+					new_y = new_coords[1];
+				}
+			}
+			else if(result[1] == "corner") {
+				let wall = result[0];
+				let new_coords = this.resolveCornerCollision(wall, enemy.x, enemy.y, enemy.radius);
+				new_x = new_coords[0];
+				new_y = new_coords[1];
+			}
+			else if(result[1] != "no collision") {console.log("invalid wall collision type");}
+			enemy.x = new_x;
+			enemy.y = new_y;
+			
+			this.handleEnemyCornerCollision(enemy);
 		}
-		else if(result[1] == "corner") {
-			let wall = result[0];
-			let new_coords = this.resolveCornerCollision(wall, this.player_x, this.player_y, this.player_radius);
-			new_player_x = new_coords[0];
-			new_player_y = new_coords[1];
-		}
-		else if(result[1] != "no collision") {console.log("invalid wall collision type");}
-		this.player_x = new_player_x;
-		this.player_y = new_player_y;
 		
-		this.handlePlayerCornerCollision();
 	}
 	
 	performEnemyActions() {
@@ -768,6 +845,7 @@ export class Assignment3 extends Scene {
 		this.displayProjectiles(context, program_state);
 		
 		this.performEnemyActions();
+		this.handleEnemyCollision();
 		
 		//display enemies
 		for (let i = 0; i < this.proc_gen.enemies.length; i++) {

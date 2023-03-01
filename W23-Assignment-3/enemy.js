@@ -34,7 +34,6 @@ const Enemy =
 		performAction() {
 			if(this.follow_player) {
 				this.face_at(this.scene.player_x, this.scene.player_y);
-				console.log(this.scene.player_x, this.scene.player_y, this.x, this.y);
 				this.moveForward();
 			}
 		}
