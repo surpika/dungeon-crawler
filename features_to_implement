@@ -1,0 +1,21 @@
+Display:
+1. Title Screen
+2. Show player health
+3. Show player score
+
+Environment:
+1. Textures on walls, floor, roof
+2. Place 1-3 stairwells/pits randomly for each new level (texture also)
+3. Torches on walls
+4. Block light from shining through surfaces
+5. Possibly add light to player
+
+Player:
+1. Change projectile model
+2. Possibly add melee attack
+3. Add projectile collision with wall
+
+Enemy:
+1. Add smart pathing
+2. Add models/animation
+3. Add enemy attacks
