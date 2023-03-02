@@ -39,7 +39,7 @@ export class Assignment3 extends Scene {
             ring: new Material(new Ring_Shader()),
 			dungeon_wall: new Material(new defs.Fake_Bump_Map(1), {
 				color: color(.8, .8, .8, 1),
-				ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/dungeon_wall.jpg") // Assets can only be in Powers of 2 (EX: 1024 x 1024)
+				ambient: .05, diffusivity: .9, specularity: .4, texture: new Texture("assets/dungeon_wall.jpg") // Assets can only be in Powers of 2 (EX: 1024 x 1024)
 			}),
 			dungeon_floor: new Material(new defs.Textured_Phong(1), {
 				color: color(.894, .376, .267, 1),
@@ -807,9 +807,10 @@ export class Assignment3 extends Scene {
         // this.shapes.[XXX].draw([XXX]) // <--example
 
         // TODO: Lighting (Requirement 2)
-        const light_position = vec4(map_width - 1, map_height - 1, 1, 1);
+        let light_position = vec4(map_width - 1, map_height - 1, 1, 1);
         // The parameters of the Light are: position, color, size
-        program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
+		light_position = vec4(this.player_x, this.player_y, 1, 1);
+        program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 20)];
 
         // TODO:  Fill in matrix operations and drawing code to draw the solar system scene (Requirements 3 and 4)
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
@@ -829,7 +830,7 @@ export class Assignment3 extends Scene {
 					if (i == this.exit_tile_i && j == this.exit_tile_j) {
 						tile_color = black;
 					}
-					this.shapes.square.draw(context, program_state, ij_transform, this.materials.test.override({color: tile_color}));
+					this.shapes.square.draw(context, program_state, ij_transform, this.materials.test.override({color: tile_color, ambient:.05, diffusivity: .6}));
 					//this.shapes.square.draw(context, program_state, ij_transform.times(Mat4.translation(0,0,2)), this.materials.test.override({color: gray}));
 				}
 				let code = this.proc_gen.tiles[i][j];
