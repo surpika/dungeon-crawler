@@ -812,7 +812,7 @@ export class Assignment3 extends Scene {
         let light_position = vec4(map_width - 1, map_height - 1, 1, 1);
         // The parameters of the Light are: position, color, size
 		light_position = vec4(this.player_x, this.player_y, 1, 1);
-        program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 20)];
+        program_state.lights = [new Light(light_position, color(1, 0.6, 0.5, 1), 20)];
 
         // TODO:  Fill in matrix operations and drawing code to draw the solar system scene (Requirements 3 and 4)
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
