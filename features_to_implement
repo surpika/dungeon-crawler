@@ -1,3 +1,11 @@
+Legend:
+1. * = high priority
+2. - = comment
+3. :: = section
+4. : = subsection
+
+Base Game::
+
 Display:
 1. Title Screen
 2. Show player health
@@ -6,16 +14,52 @@ Display:
 Environment:
 1. Textures on walls, floor, roof
 2. Place 1-3 stairwells/pits randomly for each new level (texture also)
+	-Larry: I think we could just have 1 stairwell. Also we could make an actual pit by adding squares just like normal walls below the map to represent the walls of the pit
 3. Torches on walls
-4. Block light from shining through surfaces
+	-TODO first: figure out lighting
+4. Block light from shining through surfaces *
 5. Possibly add light to player
+	-Larry: I think this one will likely be necessary
 
 Player:
 1. Change projectile model
 2. Possibly add melee attack
-3. Add projectile collision with wall
+3. Add projectile collision with wall *
 
 Enemy:
-1. Add smart pathing
+1. Add smart pathing *
 2. Add models/animation
-3. Add enemy attacks
+3. Add enemy attacks *
+
+Extra Goals::
+
+Inventory:
+1.Inventory item list
+2. Pick up item
+3. Use item
+4. Drop item
+5. Chests
+
+Shop:
+1. generate inventory
+2. calculate item prices
+3. buy item
+4. sell item
+5. Inventory UI
+
+Quests:
+1. Quest generation
+2. NPC dialogue
+3. Quest monster placement
+4. Quest journal UI
+
+Town:
+1. create map (static, not randomly generated)
+2. teleport to town
+3. teleport back to dungeon
+
+Party:
+1. Create 4 party members
+2. Stats & level up
+3. Party member attack recovery
+4. Party faces and status UI
