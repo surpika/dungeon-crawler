@@ -838,11 +838,11 @@ export class Assignment3 extends Scene {
 				if(code.charAt(0) == '1') {
 					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
 				if(code.charAt(1) == '1') {
-					this.drawSquare(context, program_state, ij_transform, Mat4.translation(-1,0,1), Mat4.rotation(Math.PI/2,0,1,0), pink);}
+					this.drawSquare(context, program_state, ij_transform, Mat4.translation(-1,0,1), Mat4.rotation(Math.PI/2,0,1,0).times(Mat4.rotation(Math.PI/2, 0, 0, 1)), pink);}
 				if(code.charAt(2) == '1') {
-					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,-1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
+					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,-1,1), Mat4.rotation(Math.PI/2,-1,0,0), pink);}
 				if(code.charAt(3) == '1') {
-					this.drawSquare(context, program_state, ij_transform, Mat4.translation(1,0,1), Mat4.rotation(Math.PI/2,0,1,0), pink);}
+					this.drawSquare(context, program_state, ij_transform, Mat4.translation(1,0,1), Mat4.rotation(Math.PI/2,0,-1,0).times(Mat4.rotation(Math.PI/2, 0, 0, 1)), pink);}
 			}
 		}
 
