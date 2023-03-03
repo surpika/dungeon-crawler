@@ -570,17 +570,18 @@ export class Assignment3 extends Scene {
 			let projectile = this.projectiles[i];
 			let projectile_x = projectile[0];
 			let projectile_y = projectile[1];
-			let tile_i = Math.floor((this.player_x + 1) / 2);
-			let tile_j = Math.floor((this.player_y + 1) / 2);
-			let tile = this.proc_gen.tiles[tile_i][tile_j];
-
+			let tile_i = Math.floor((projectile_x + 1) / 2);
+			let tile_j = Math.floor((projectile_y + 1) / 2);
+			
 			if (tile_i < 0 || tile_i >= map_width || tile_j < 0 || tile_j >= map_height) {
 				//remove projectile
-				this.projectiles = this.projectiles.splice(i, 1);
+				this.projectiles.splice(i, 1);
 			} else if (this.proc_gen.map[tile_i][tile_j] == 1) {
 				//remove projectile
-				this.projectiles = this.projectiles.splice(i, 1);
+				this.projectiles.splice(i, 1);
 			}
+
+			
 		}
 	}
 
@@ -588,12 +589,12 @@ export class Assignment3 extends Scene {
 	displayProjectiles(context, program_state) {
 		for (let i = 0; i < this.projectiles.length; i++) {
 			let projectile = this.projectiles[i];
-			//console.log(projectile);
+			console.log(projectile);
 			let projectile_x = projectile[0];
 			let projectile_y = projectile[1];
 			let angle = projectile[2];
 			let model_transform = Mat4.identity().times(Mat4.translation(projectile_x,projectile_y,1)).times(Mat4.scale(.2,.2,.2)).times(Mat4.rotation(-Math.PI/2, 0, 0, 1)).times(Mat4.rotation(Math.PI/2, Math.cos(angle), Math.sin(angle), 0));/*.times(Mat4.rotation(Math.PI/2, 1, 0,0))*/
-			this.shapes.arrow.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#2c79f5")}));
+			this.shapes.arrow.draw(context, program_state, model_transform, this.materials.wood_door);
 		}
 	}
 

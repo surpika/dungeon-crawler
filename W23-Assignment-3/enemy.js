@@ -77,11 +77,13 @@ const Enemy =
 			while (tile_i != target_tile_i || tile_j != target_tile_j) {
 				
 				if (!visited.has([tile_i, tile_j])) {
-					let tile = this.proc_gen.map[tile_i][tile_j];
-					if (tile == 1) {
-						return false;
+					if(!(tile_i < 0 || tile_i >= map_width || tile_j < 0 || tile_j >= map_height)) {
+						let tile = this.proc_gen.map[tile_i][tile_j];
+						if (tile == 1) {
+							return false;
+						}
+						visited.add([tile_i, tile_j]);
 					}
-					visited.add([tile_i, tile_j]);
 				}
 				
 				current_point = [current_point[0] + sight_vector[0], current_point[1] + sight_vector[1]];
