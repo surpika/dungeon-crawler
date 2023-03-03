@@ -833,7 +833,7 @@ export class Assignment3 extends Scene {
 						tile_color = black;
 					}
 					this.shapes.square.draw(context, program_state, ij_transform, this.materials.dungeon_floor); //ambient 0.05
-					//this.shapes.square.draw(context, program_state, ij_transform.times(Mat4.translation(0,0,2)), this.materials.test.override({color: gray}));
+					this.shapes.square.draw(context, program_state, ij_transform.times(Mat4.translation(0,0,2)).times(Mat4.rotation(Math.PI, 1, 0, 0)), this.materials.dungeon_floor);
 				}
 				let code = this.proc_gen.tiles[i][j];
 				if(code == '1111') {continue;}
