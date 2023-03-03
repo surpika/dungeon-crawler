@@ -2,7 +2,7 @@ import {defs, tiny} from './common.js';
 // Pull these names into this module's scope for convenience:
 const {Vector, vec3, vec4, color, Mat4, Light, Shape, Material, Shader, Texture, Scene} = tiny;
 
-export class Text_Line extends Shape {                           // **Text_Line** embeds text in the 3D world, using a crude texture
+class Text_Line extends Shape {                           // **Text_Line** embeds text in the 3D world, using a crude texture
                                                                  // method.  This Shape is made of a horizontal arrangement of quads.
                                                                  // Each is textured over with images of ASCII characters, spelling
                                                                  // out a string.  Usage:  Instantiate the Shape with the desired
@@ -99,3 +99,5 @@ export class Text_Demo extends Scene {             // **Text_Demo** is a scene w
             }
     }
 }
+
+export default Text_Line

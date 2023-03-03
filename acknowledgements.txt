@@ -10,3 +10,6 @@ https://free3d.com/3d-model/sting-sword-128810.html
 arrow model:
 https://sketchfab.com/3d-models/arrow-61379adc28d74bba8639a037f2a8f928
 credit: Bram van Hoof
+
+arrow sound, arrow hit:
+https://quicksounds.com/library/sounds/arrow

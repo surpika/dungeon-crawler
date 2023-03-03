@@ -7,7 +7,7 @@ const map_width = 30;
 const map_height = 30;
 const map_density = 0.5// minimum percentage of empty tiles
 const entropy = 0.5; // percent of time that snake will change direction.
-const enemy_density = 1.0/450.0//0.01;
+const enemy_density = 4.0/450.0//0.01;
 
 const Proc_Gen =
 	class Proc_Gen {

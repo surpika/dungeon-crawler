@@ -24,6 +24,9 @@ const Enemy =
 				speed: 0.05,
 				current_remember_timeout: 10,
 				max_remeber_timeout: 10,
+				attack_radius: 1,
+				moving: false,
+				attack_animation_timer: 1000
 			}
 			Object.assign(this, data_members);
 		}
@@ -45,14 +48,30 @@ const Enemy =
 		}
 		
 		performAction(player_x, player_y) {
-			this.tick_initial_x = this.x;
-			this.tick_initial_y = this.y;
+			if(this.health > 0) {
+				let distance = Math.sqrt((player_x - this.x)**2 + (player_y - this.y)**2);
+				if(distance < this.attack_radius) {
+					this.moving = false;
+					if(this.attack_animation_timer < 0) {
+						this.scene.player_health -= 1;
+						this.attack_animation_timer = 1000;
+					}
+				}
+				else {
+					this.attack_animation_timer = 1000;
+					this.moving = true;
+					this.tick_initial_x = this.x;
+					this.tick_initial_y = this.y;
 
-			this.seePlayer(player_x, player_y); //player_x, player_y
+					this.seePlayer(player_x, player_y); //player_x, player_y
 
-			if(this.follow_player) {
-				this.face_at(player_x, player_y); //player_x, player_y
-				this.moveForward();
+					if(this.follow_player) {
+						this.face_at(player_x, player_y); //player_x, player_y
+						this.moveForward();
+					}
+				}
+			} else {
+				this.moving = false;
 			}
 		}
 
