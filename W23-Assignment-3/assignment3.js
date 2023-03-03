@@ -26,6 +26,15 @@ export class Assignment3 extends Scene {
             cylinder: new defs.Capped_Cylinder(15, 15),
 			teapot: new Shape_From_File("assets/teapot.obj"),
 			goblin: new Shape_From_File("assets/goblin.OBJ"),
+			skeleton: new Shape_From_File("assets/skeleton.obj"),
+			cube2: new Shape_From_File("assets/cube.obj"),
+			skeleton_torso: new Shape_From_File("assets/skeleton_torso.obj"),
+			skeleton_leg_left: new Shape_From_File("assets/skeleton_leg_left.obj"),
+			skeleton_leg_right: new Shape_From_File("assets/skeleton_leg_right.obj"),
+			skeleton_arm_left: new Shape_From_File("assets/skeleton_arm_left.obj"),
+			skeleton_arm_right: new Shape_From_File("assets/skeleton_arm_right.obj"),
+			skeleton_sword_arm: new Shape_From_File("assets/skeleton_arm_left_sword.obj"),
+			arrow: new Shape_From_File("assets/arrow.obj")
 			// TODO:  Fill in as many additional shape instances as needed in this key/value table.
             //        (Requirement 1)
         };
@@ -47,6 +56,14 @@ export class Assignment3 extends Scene {
 				//ambient: .2, diffusivity: .5, specularity: .5, texture: new Texture("assets/floor.jpg") 
 				ambient: .05, diffusivity: .9, specularity: .4, texture: new Texture("assets/floor.jpg") 
 			}),
+			bone: new Material(new defs.Fake_Bump_Map(1), {
+				color: color(.8, .8, .8, 1), 
+				ambient: .05, diffusivity: .9, specularity: .4, texture: new Texture("assets/bone.png")
+			}), 
+			wood_door: new Material(new defs.Fake_Bump_Map(1), {
+				color: color(.8, .8, .8, 1), 
+				ambient: .05, diffusivity: .9, specularity: .4, texture: new Texture("assets/wood_door.png")
+			}), 
 		}
             // TODO:  Fill in as many additional material objects as needed in this key/value table.
             //        (Requirement 4)
@@ -111,7 +128,7 @@ export class Assignment3 extends Scene {
 			if (this.time_to_next_fire <= 0) {
 				let new_projectile = [this.player_x, this.player_y, this.player_angle_of_view];
 				this.projectiles.push(new_projectile);
-				console.log(this.projectiles);
+				//console.log(this.projectiles);
 				this.time_to_next_fire = this.time_between_shots
 			}
         });
@@ -571,11 +588,12 @@ export class Assignment3 extends Scene {
 	displayProjectiles(context, program_state) {
 		for (let i = 0; i < this.projectiles.length; i++) {
 			let projectile = this.projectiles[i];
-			console.log(projectile);
+			//console.log(projectile);
 			let projectile_x = projectile[0];
 			let projectile_y = projectile[1];
-			let model_transform = Mat4.identity().times(Mat4.translation(projectile_x,projectile_y,1)).times(Mat4.scale(.2,.2,.2));
-			this.shapes.sphere.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#2c79f5")}));
+			let angle = projectile[2];
+			let model_transform = Mat4.identity().times(Mat4.translation(projectile_x,projectile_y,1)).times(Mat4.scale(.2,.2,.2)).times(Mat4.rotation(-Math.PI/2, 0, 0, 1)).times(Mat4.rotation(Math.PI/2, Math.cos(angle), Math.sin(angle), 0));/*.times(Mat4.rotation(Math.PI/2, 1, 0,0))*/
+			this.shapes.arrow.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#2c79f5")}));
 		}
 	}
 
@@ -828,11 +846,13 @@ export class Assignment3 extends Scene {
 			for(let j = 0; j < map_height; j++) {
 				let ij_transform = Mat4.identity().times(Mat4.translation(i*2, j*2, 0));
 				if(this.proc_gen.map[i][j] == 0) {
-					let tile_color = green;
 					if (i == this.exit_tile_i && j == this.exit_tile_j) {
-						tile_color = black;
+						this.shapes.square.draw(context, program_state, ij_transform, this.materials.wood_door);
 					}
-					this.shapes.square.draw(context, program_state, ij_transform, this.materials.dungeon_floor); //ambient 0.05
+					else {
+						this.shapes.square.draw(context, program_state, ij_transform, this.materials.dungeon_floor); //ambient 0.05
+					}
+					
 					this.shapes.square.draw(context, program_state, ij_transform.times(Mat4.translation(0,0,2)).times(Mat4.rotation(Math.PI, 1, 0, 0)), this.materials.dungeon_floor);
 				}
 				let code = this.proc_gen.tiles[i][j];
@@ -895,12 +915,39 @@ export class Assignment3 extends Scene {
 		//display enemies
 		for (let i = 0; i < this.proc_gen.enemies.length; i++) {
 			let enemy = this.proc_gen.enemies[i];
-			let enemy_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.75)).times(Mat4.scale(enemy.radius, enemy.radius, 1.5));
-			this.shapes.cylinder.draw(context, program_state, enemy_transform, this.materials.test.override({color: hex_color("ff0000")}));
+			let enemy_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 1)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0));
+			this.shapes.skeleton_torso.draw(context, program_state, enemy_transform, this.materials.bone);
+			
+			if(enemy.follow_player) {
+				let m = Math.sin(t * Math.PI);
+				
+				let leg_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.15)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-0.5, Math.abs(Math.PI/4 * m), -2.2 * m)).times(Mat4.rotation(m * Math.PI/4, 1, 0, 0));
+				this.shapes.skeleton_leg_left.draw(context, program_state, leg_transform, this.materials.bone);
+				//let right_leg_transform = leg_transform.times(Mat4.translation(1, 0, 0));
+				let right_leg_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.15)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(0.5, Math.abs(Math.PI/4 * m), 2.2 * m)).times(Mat4.rotation(-m * Math.PI/4, 1, 0, 0));
+				this.shapes.skeleton_leg_right.draw(context, program_state, right_leg_transform, this.materials.bone);
+				let arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.10, 0.10, 0.10)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-1.5, Math.abs(Math.PI/4 * m), 3.5 * m)).times(Mat4.rotation(Math.PI/2, 0, 0, 1)).times(Mat4.rotation(m * Math.PI/4, 0, 1 ,0));
+				this.shapes.skeleton_sword_arm.draw(context, program_state, arm_transform, this.materials.bone);
+				let right_arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(1.1, Math.abs(Math.PI/4 * m), -2.2 * m)).times(Mat4.rotation(Math.PI/2, 0, 0, -1)).times(Mat4.rotation(m * Math.PI/4, 0, 1 ,0));;
+				this.shapes.skeleton_arm_right.draw(context, program_state, right_arm_transform, this.materials.bone);
+			}
+			else {
+				let leg_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.15)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-0.5, 0, 0));
+				this.shapes.skeleton_leg_left.draw(context, program_state, leg_transform, this.materials.bone);
+				let right_leg_transform = leg_transform.times(Mat4.translation(1, 0, 0));
+				this.shapes.skeleton_leg_right.draw(context, program_state, right_leg_transform, this.materials.bone);
+				let arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-1.1, 0, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1));
+				this.shapes.skeleton_arm_left.draw(context, program_state, arm_transform, this.materials.bone);
+				let right_arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(1.1, 0, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, -1));
+				this.shapes.skeleton_arm_right.draw(context, program_state, right_arm_transform, this.materials.bone);
+			}
+			
 		}
 
 		//this.shapes.teapot.draw(context, program_state, Mat4.identity().times(Mat4.translation(this.player_x +2 ,this.player_y + 2,0)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)), this.materials.dungeon_floor);
 		//this.shapes.goblin.draw(context, program_state, Mat4.identity().times(Mat4.translation(this.player_x -2 ,this.player_y - 2,0)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)), this.materials.dungeon_floor);
+		//this.shapes.skeleton.draw(context, program_state, Mat4.identity().times(Mat4.translation(this.player_x +1 ,this.player_y + 1,1)).times(Mat4.scale(0.3, 0.3, 0.3).times(Mat4.rotation(Math.PI/12, 1, 0, 0))), this.materials.bone);
+		//this.shapes.skeleton.draw(context, program_state, Mat4.identity().times(Mat4.translation(this.player_x +2 ,this.player_y + 2,1)).times(Mat4.scale(0.3, 0.3, 0.3).times(Mat4.rotation(Math.PI/2, 1, 0, 0))), this.materials.bone);
 
 		let camera = Mat4.look_at(vec3(this.player_x, this.player_y, 1), vec3(this.player_x + (5*Math.cos(this.player_angle_of_view)), this.player_y + (5*Math.sin(this.player_angle_of_view)), 1), vec3(0, 0, 1));
 		program_state.set_camera(camera);

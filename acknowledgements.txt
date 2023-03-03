@@ -1,0 +1,12 @@
+trap door texture:
+https://freestocktextures.com/texture/door-wood-rusty,544.html
+
+skeleton model:
+https://www.cgtrader.com/items/734240/download-page
+
+sword model:
+https://free3d.com/3d-model/sting-sword-128810.html
+
+arrow model:
+https://sketchfab.com/3d-models/arrow-61379adc28d74bba8639a037f2a8f928
+credit: Bram van Hoof

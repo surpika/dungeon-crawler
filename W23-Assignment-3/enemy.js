@@ -48,10 +48,10 @@ const Enemy =
 			this.tick_initial_x = this.x;
 			this.tick_initial_y = this.y;
 
-			this.seePlayer(player_x, player_y);
+			this.seePlayer(player_x, player_y); //player_x, player_y
 
 			if(this.follow_player) {
-				this.face_at(player_x, player_y);
+				this.face_at(player_x, player_y); //player_x, player_y
 				this.moveForward();
 			}
 		}
