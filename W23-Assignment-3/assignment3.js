@@ -5,6 +5,7 @@ import {Shape_From_File} from "./examples/obj-file-demo.js";
 import Enemy from "./enemy.js";
 import playSound from './helpers.js';
 import Text_Line from './examples/text-demo.js';
+import { Shadow_Demo } from './examples/shadow-demo.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
@@ -70,7 +71,11 @@ export class Assignment3 extends Scene {
 			text_image: new Material(new defs.Textured_Phong(1), {
             ambient: 1, diffusivity: 0, specularity: 0,
             texture: new Texture("assets/text.png")
-			})
+			}),
+			health_bar: new Material(new defs.Phong_Shader(),
+                {ambient: 1, diffusivity: 0, specularity: 0, color: hex_color("#ff0000")}),
+			health_bar_background: new Material(new defs.Phong_Shader(),
+                {ambient: 1, diffusivity: 0, specularity: 0, color: hex_color("#808080")})
 		}
             // TODO:  Fill in as many additional material objects as needed in this key/value table.
             //        (Requirement 4)
@@ -93,6 +98,7 @@ export class Assignment3 extends Scene {
 			player_score: 0,
 			current_floor: 1,
 			player_health: 10,
+			player_max_health: 10,
 
 			projectiles: [], // [projectile_x, projectile_y, angle_of_direction]
 			projectile_speed: .3,
@@ -836,6 +842,7 @@ export class Assignment3 extends Scene {
 	}
 
     display(context, program_state) {
+
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
         if (!context.scratchpad.controls) {
@@ -843,7 +850,7 @@ export class Assignment3 extends Scene {
             // Define the global camera and projection matrices, which are stored in program_state.
             // program_state.set_camera(this.initial_camera_location);
         }
-
+	
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, .1, 1000);
 
@@ -855,7 +862,15 @@ export class Assignment3 extends Scene {
         // The parameters of the Light are: position, color, size
 		light_position = vec4(this.player_x, this.player_y, 1, 1);
         program_state.lights = [new Light(light_position, color(1, 0.6, 0.5, 1), 20)];
-
+		
+		if(this.player_health <= 0) {
+			//death text
+			let text_transform = Mat4.identity().times(Mat4.translation(this.player_x + 0.2 * Math.cos(this.player_angle_of_view), this.player_y + 0.2 * Math.sin(this.player_angle_of_view) , 1)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(this.player_angle_of_view - Math.PI/2, 0, 1, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
+			this.shapes.text_line.set_string("YOU DIED", context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+			return;
+		}
+		
         // TODO:  Fill in matrix operations and drawing code to draw the solar system scene (Requirements 3 and 4)
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
         const yellow = hex_color("#fac91a");
@@ -936,8 +951,6 @@ export class Assignment3 extends Scene {
 		this.performEnemyActions();
 		this.handleEnemyCollision();
 		
-		console.log(this.player_health);
-		
 		//display enemies
 		for (let i = 0; i < this.proc_gen.enemies.length; i++) {
 			let enemy = this.proc_gen.enemies[i];
@@ -991,11 +1004,16 @@ export class Assignment3 extends Scene {
 
 		let camera = Mat4.look_at(vec3(this.player_x, this.player_y, 1), vec3(this.player_x + (5*Math.cos(this.player_angle_of_view)), this.player_y + (5*Math.sin(this.player_angle_of_view)), 1), vec3(0, 0, 1));
 		program_state.set_camera(camera);
-		/*
-		let text_transform = Mat4.identity().times(Mat4.translation(this.player_x + 2, this.player_y, 1));
-		this.shapes.text_line.set_string("YOU DIED", context.context);
-        this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
-		*/
+		
+		//display health bar
+		let hp_bar_scale_factor = this.player_health/this.player_max_health;
+		let hp_bar_translation_factor = (this.player_max_health-this.player_health) * 1;
+		let hp_bar_base_transform = Mat4.identity().times(Mat4.translation(this.player_x + 0.2 * Math.cos(this.player_angle_of_view), this.player_y + 0.2 * Math.sin(this.player_angle_of_view) , 1)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(this.player_angle_of_view - Math.PI/2, 0, 1, 0)).times(Mat4.translation(-0.13, 0.075, 0));
+		let hp_bar_transform = hp_bar_base_transform.times(Mat4.scale(0.015 * hp_bar_scale_factor, 0.005, 0.005));
+		let hp_bar_background_transform = hp_bar_base_transform.times(Mat4.translation(0, 0, -0.00001)).times(Mat4.scale(0.015, 0.005, 0.005));
+		this.shapes.square.draw(context, program_state, hp_bar_transform , this.materials.health_bar);
+		this.shapes.square.draw(context, program_state, hp_bar_background_transform , this.materials.health_bar_background);
+		
     }
 
 	

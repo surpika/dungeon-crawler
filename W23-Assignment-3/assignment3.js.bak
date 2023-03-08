@@ -3,6 +3,9 @@ import Proc_Gen from "./proc-gen.js";
 import {map_width, map_height} from './proc-gen.js';
 import {Shape_From_File} from "./examples/obj-file-demo.js";
 import Enemy from "./enemy.js";
+import playSound from './helpers.js';
+import Text_Line from './examples/text-demo.js';
+import Shadow_Demo from './examples/shadow-demo.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
@@ -26,6 +29,16 @@ export class Assignment3 extends Scene {
             cylinder: new defs.Capped_Cylinder(15, 15),
 			teapot: new Shape_From_File("assets/teapot.obj"),
 			goblin: new Shape_From_File("assets/goblin.OBJ"),
+			skeleton: new Shape_From_File("assets/skeleton.obj"),
+			cube2: new Shape_From_File("assets/cube.obj"),
+			skeleton_torso: new Shape_From_File("assets/skeleton_torso.obj"),
+			skeleton_leg_left: new Shape_From_File("assets/skeleton_leg_left.obj"),
+			skeleton_leg_right: new Shape_From_File("assets/skeleton_leg_right.obj"),
+			skeleton_arm_left: new Shape_From_File("assets/skeleton_arm_left.obj"),
+			skeleton_arm_right: new Shape_From_File("assets/skeleton_arm_right.obj"),
+			skeleton_sword_arm: new Shape_From_File("assets/skeleton_arm_left_sword.obj"),
+			arrow: new Shape_From_File("assets/arrow.obj"),
+			text_line: new Text_Line(35)
 			// TODO:  Fill in as many additional shape instances as needed in this key/value table.
             //        (Requirement 1)
         };
@@ -39,12 +52,30 @@ export class Assignment3 extends Scene {
             ring: new Material(new Ring_Shader()),
 			dungeon_wall: new Material(new defs.Fake_Bump_Map(1), {
 				color: color(.8, .8, .8, 1),
-				ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/dungeon_wall.jpg") // Assets can only be in Powers of 2 (EX: 1024 x 1024)
+				ambient: .05, diffusivity: .9, specularity: .4, texture: new Texture("assets/dungeon_wall.jpg") // Assets can only be in Powers of 2 (EX: 1024 x 1024)
 			}),
-			dungeon_floor: new Material(new defs.Textured_Phong(1), {
-				color: color(.894, .376, .267, 1),
-				ambient: .2, diffusivity: .5, specularity: .5, texture: new Texture("assets/floor.jpg")
+			dungeon_floor: new Material(new defs.Fake_Bump_Map(1), {
+				//color: color(.894, .376, .267, 1),
+				color: color(.8, .8, .8, 1),
+				//ambient: .2, diffusivity: .5, specularity: .5, texture: new Texture("assets/floor.jpg") 
+				ambient: .05, diffusivity: .9, specularity: .4, texture: new Texture("assets/floor.jpg") 
 			}),
+			bone: new Material(new defs.Fake_Bump_Map(1), {
+				color: color(.8, .8, .8, 1), 
+				ambient: .05, diffusivity: .9, specularity: .4, texture: new Texture("assets/bone.png")
+			}), 
+			wood_door: new Material(new defs.Fake_Bump_Map(1), {
+				color: color(.8, .8, .8, 1), 
+				ambient: .05, diffusivity: .9, specularity: .4, texture: new Texture("assets/wood_door.png")
+			}), 
+			text_image: new Material(new defs.Textured_Phong(1), {
+            ambient: 1, diffusivity: 0, specularity: 0,
+            texture: new Texture("assets/text.png")
+			}),
+			health_bar: new Material(new defs.Phong_Shader(),
+                {ambient: 1, diffusivity: 0, specularity: 0, color: hex_color("#ff0000")}),
+			health_bar_background: new Material(new defs.Phong_Shader(),
+                {ambient: 1, diffusivity: 0, specularity: 0, color: hex_color("#808080")})
 		}
             // TODO:  Fill in as many additional material objects as needed in this key/value table.
             //        (Requirement 4)
@@ -66,6 +97,8 @@ export class Assignment3 extends Scene {
 			
 			player_score: 0,
 			current_floor: 1,
+			player_health: 10,
+			player_max_health: 10,
 
 			projectiles: [], // [projectile_x, projectile_y, angle_of_direction]
 			projectile_speed: .3,
@@ -109,8 +142,9 @@ export class Assignment3 extends Scene {
 			if (this.time_to_next_fire <= 0) {
 				let new_projectile = [this.player_x, this.player_y, this.player_angle_of_view];
 				this.projectiles.push(new_projectile);
-				console.log(this.projectiles);
+				//console.log(this.projectiles);
 				this.time_to_next_fire = this.time_between_shots
+				playSound("assets/arrow.mp3");
 			}
         });
 		
@@ -415,7 +449,6 @@ export class Assignment3 extends Scene {
 		}
 		let tile = this.proc_gen.tiles[player_tile_i][player_tile_j];
 		if(tile.charAt(0) == '1' && tile.charAt(1) == '1') { //top and left
-			console.log("topleft");
 			let top_wall_y = player_tile_j * 2 + 1;
 			let left_wall_x = player_tile_i * 2 - 1;
 			let top_boundary = top_wall_y - this.player_radius;
@@ -427,7 +460,6 @@ export class Assignment3 extends Scene {
 				this.player_y = top_boundary;
 			}
 		} if(tile.charAt(1) == '1' && tile.charAt(2) == '1') { //left and bottom
-			console.log("bottomleft");
 			let left_wall_x = player_tile_i * 2 - 1;
 			let bottom_wall_y = player_tile_j * 2 -1;
 			let left_boundary = left_wall_x + this.player_radius;
@@ -439,7 +471,6 @@ export class Assignment3 extends Scene {
 				this.player_y = bottom_boundary;
 			}
 		} if(tile.charAt(2) == '1' && tile.charAt(3) == '1') { //bottom and right
-			console.log("bottomright");
 			let right_wall_x = player_tile_i * 2 + 1;
 			let bottom_wall_y = player_tile_j * 2 -1;
 			let right_boundary = right_wall_x - this.player_radius;
@@ -451,7 +482,6 @@ export class Assignment3 extends Scene {
 				this.player_y = bottom_boundary;
 			}
 		} if(tile.charAt(3) == '1' && tile.charAt(0) == '1') { //right and top
-			console.log("topright");
 			let right_wall_x = player_tile_i * 2 + 1;
 			let top_wall_y = player_tile_j * 2 + 1;
 			let right_boundary = right_wall_x - this.player_radius;
@@ -555,29 +585,45 @@ export class Assignment3 extends Scene {
 			let projectile = this.projectiles[i];
 			let projectile_x = projectile[0];
 			let projectile_y = projectile[1];
-			let tile_i = Math.floor((this.player_x + 1) / 2);
-			let tile_j = Math.floor((this.player_y + 1) / 2);
-			let tile = this.proc_gen.tiles[tile_i][tile_j];
-
+			let tile_i = Math.floor((projectile_x + 1) / 2);
+			let tile_j = Math.floor((projectile_y + 1) / 2);
+			
 			if (tile_i < 0 || tile_i >= map_width || tile_j < 0 || tile_j >= map_height) {
 				//remove projectile
-				this.projectiles = this.projectiles.splice(i, 1);
+				this.projectiles.splice(i, 1);
 			} else if (this.proc_gen.map[tile_i][tile_j] == 1) {
 				//remove projectile
-				this.projectiles = this.projectiles.splice(i, 1);
+				this.projectiles.splice(i, 1);
+			}
+			
+			//enemy collision BUG: ARROW TENDS TO HIT ENEMY TWICE
+			for (let i = 0  ; i < map_width; i++) {
+				for( let j = 0; j < map_height; j++) {
+					for (let enemy of this.proc_gen.enemy_grid[i][j]) {
+						if(this.checkCirclesCollision(projectile_x, projectile_y, 0, enemy.x, enemy.y, enemy.radius)) {
+							console.log("shot enemy");
+							enemy.health = 0;
+							playSound("./assets/arrow_hit.mp3");
+							return;
+						}
+					}
+				}
 			}
 		}
+		
+		
 	}
 
 	
 	displayProjectiles(context, program_state) {
 		for (let i = 0; i < this.projectiles.length; i++) {
 			let projectile = this.projectiles[i];
-			console.log(projectile);
+			//console.log(projectile);
 			let projectile_x = projectile[0];
 			let projectile_y = projectile[1];
-			let model_transform = Mat4.identity().times(Mat4.translation(projectile_x,projectile_y,1)).times(Mat4.scale(.2,.2,.2));
-			this.shapes.sphere.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#2c79f5")}));
+			let angle = projectile[2];
+			let model_transform = Mat4.identity().times(Mat4.translation(projectile_x,projectile_y,1)).times(Mat4.scale(.2,.2,.2)).times(Mat4.rotation(-Math.PI/2, 0, 0, 1)).times(Mat4.rotation(Math.PI/2, Math.cos(angle), Math.sin(angle), 0));/*.times(Mat4.rotation(Math.PI/2, 1, 0,0))*/
+			this.shapes.arrow.draw(context, program_state, model_transform, this.materials.wood_door);
 		}
 	}
 
@@ -602,7 +648,7 @@ export class Assignment3 extends Scene {
 
 		// Generate new maze
 		// MIGHT WANT TO VERIFY WE DON'T HAVE TO DELETE PREVIOUS OBJECT
-		this.proc_gen = new Proc_Gen();
+		this.proc_gen = new Proc_Gen(this);
 
 		// Generate new exit tile
 		this.exit_tile_i = Math.floor(map_width / 2) - 1;
@@ -745,15 +791,58 @@ export class Assignment3 extends Scene {
 		}
 		
 	}
+
+	checkCirclesCollision(x1,y1,r1,x2,y2,r2) {
+
+		let distance = Math.sqrt( (x1-x2)**2 + (y1-y2)**2 );
+		let total_radius = r1 + r2;
+
+		return distance < total_radius;
+		
+	}
+
+	
 	
 	performEnemyActions() {
+
+		// Set current tiles of each enemy
+		this.proc_gen.setEnemyTiles();
+
+		// Iterate through all enemies
 		for (let i = 0; i < this.proc_gen.enemies.length; i++) {
+
+			// Get current enemy
 			let enemy = this.proc_gen.enemies[i];
-			enemy.performAction();
+
+			// Perform enemy action
+			enemy.performAction(this.player_x, this.player_y);
+
+			// Check for collision with player
+			let collide = this.checkCirclesCollision(this.player_x, this.player_y, this.player_radius, enemy.x, enemy.y, enemy.radius);
+			if (collide) {
+				enemy.x = enemy.tick_initial_x;
+				enemy.y = enemy.tick_initial_y;
+				continue;
+			}
+
+			// Check for collision with other enemies
+			let enemies_around_this_enemy = this.proc_gen.getEnemiesAround(enemy.tile_i, enemy.tile_j);
+			enemies_around_this_enemy = enemies_around_this_enemy.filter(item => item !== enemy);
+
+			for (let close_enemy of enemies_around_this_enemy) {
+				collide = this.checkCirclesCollision(enemy.x, enemy.y, enemy.radius, close_enemy.x, close_enemy.y, close_enemy.radius);
+				if (collide) {
+					enemy.x = enemy.tick_initial_x;
+					enemy.y = enemy.tick_initial_y;
+				}
+			}
+			
+			
 		}
 	}
 
     display(context, program_state) {
+
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
         if (!context.scratchpad.controls) {
@@ -761,7 +850,7 @@ export class Assignment3 extends Scene {
             // Define the global camera and projection matrices, which are stored in program_state.
             // program_state.set_camera(this.initial_camera_location);
         }
-
+	
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, .1, 1000);
 
@@ -769,10 +858,19 @@ export class Assignment3 extends Scene {
         // this.shapes.[XXX].draw([XXX]) // <--example
 
         // TODO: Lighting (Requirement 2)
-        const light_position = vec4(map_width - 1, map_height - 1, 1, 1);
+        let light_position = vec4(map_width - 1, map_height - 1, 1, 1);
         // The parameters of the Light are: position, color, size
-        program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
-
+		light_position = vec4(this.player_x, this.player_y, 1, 1);
+        program_state.lights = [new Light(light_position, color(1, 0.6, 0.5, 1), 20)];
+		
+		if(this.player_health <= 0) {
+			//death text
+			let text_transform = Mat4.identity().times(Mat4.translation(this.player_x + 0.2 * Math.cos(this.player_angle_of_view), this.player_y + 0.2 * Math.sin(this.player_angle_of_view) , 1)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(this.player_angle_of_view - Math.PI/2, 0, 1, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
+			this.shapes.text_line.set_string("YOU DIED", context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+			return;
+		}
+		
         // TODO:  Fill in matrix operations and drawing code to draw the solar system scene (Requirements 3 and 4)
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
         const yellow = hex_color("#fac91a");
@@ -787,23 +885,25 @@ export class Assignment3 extends Scene {
 			for(let j = 0; j < map_height; j++) {
 				let ij_transform = Mat4.identity().times(Mat4.translation(i*2, j*2, 0));
 				if(this.proc_gen.map[i][j] == 0) {
-					let tile_color = green;
 					if (i == this.exit_tile_i && j == this.exit_tile_j) {
-						tile_color = black;
+						this.shapes.square.draw(context, program_state, ij_transform, this.materials.wood_door);
 					}
-					this.shapes.square.draw(context, program_state, ij_transform, this.materials.test.override({color: tile_color}));
-					//this.shapes.square.draw(context, program_state, ij_transform.times(Mat4.translation(0,0,2)), this.materials.test.override({color: gray}));
+					else {
+						this.shapes.square.draw(context, program_state, ij_transform, this.materials.dungeon_floor); //ambient 0.05
+					}
+					
+					this.shapes.square.draw(context, program_state, ij_transform.times(Mat4.translation(0,0,2)).times(Mat4.rotation(Math.PI, 1, 0, 0)), this.materials.dungeon_floor);
 				}
 				let code = this.proc_gen.tiles[i][j];
 				if(code == '1111') {continue;}
 				if(code.charAt(0) == '1') {
 					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
 				if(code.charAt(1) == '1') {
-					this.drawSquare(context, program_state, ij_transform, Mat4.translation(-1,0,1), Mat4.rotation(Math.PI/2,0,1,0), pink);}
+					this.drawSquare(context, program_state, ij_transform, Mat4.translation(-1,0,1), Mat4.rotation(Math.PI/2,0,1,0).times(Mat4.rotation(Math.PI/2, 0, 0, 1)), pink);}
 				if(code.charAt(2) == '1') {
-					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,-1,1), Mat4.rotation(Math.PI/2,1,0,0), pink);}
+					this.drawSquare(context, program_state, ij_transform, Mat4.translation(0,-1,1), Mat4.rotation(Math.PI/2,-1,0,0), pink);}
 				if(code.charAt(3) == '1') {
-					this.drawSquare(context, program_state, ij_transform, Mat4.translation(1,0,1), Mat4.rotation(Math.PI/2,0,1,0), pink);}
+					this.drawSquare(context, program_state, ij_transform, Mat4.translation(1,0,1), Mat4.rotation(Math.PI/2,0,-1,0).times(Mat4.rotation(Math.PI/2, 0, 0, 1)), pink);}
 			}
 		}
 
@@ -854,15 +954,66 @@ export class Assignment3 extends Scene {
 		//display enemies
 		for (let i = 0; i < this.proc_gen.enemies.length; i++) {
 			let enemy = this.proc_gen.enemies[i];
-			let enemy_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.75)).times(Mat4.scale(enemy.radius, enemy.radius, 1.5));
-			this.shapes.cylinder.draw(context, program_state, enemy_transform, this.materials.test.override({color: hex_color("ff0000")}));
+			
+			if(enemy.health > 0) {
+				let enemy_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 1)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0));
+				this.shapes.skeleton_torso.draw(context, program_state, enemy_transform, this.materials.bone);
+
+				if(enemy.moving) {
+					let m = Math.sin(t * Math.PI);
+					
+					let leg_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.15)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-0.5, Math.abs(Math.PI/4 * m), -2.2 * m)).times(Mat4.rotation(m * Math.PI/4, 1, 0, 0));
+					this.shapes.skeleton_leg_left.draw(context, program_state, leg_transform, this.materials.bone);
+					//let right_leg_transform = leg_transform.times(Mat4.translation(1, 0, 0));
+					let right_leg_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.15)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(0.5, Math.abs(Math.PI/4 * m), 2.2 * m)).times(Mat4.rotation(-m * Math.PI/4, 1, 0, 0));
+					this.shapes.skeleton_leg_right.draw(context, program_state, right_leg_transform, this.materials.bone);
+					let arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.10, 0.10, 0.10)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-1.5, Math.abs(Math.PI/4 * m), 3.5 * m)).times(Mat4.rotation(Math.PI/2, 0, 0, 1)).times(Mat4.rotation(m * Math.PI/4, 0, 1 ,0));
+					this.shapes.skeleton_sword_arm.draw(context, program_state, arm_transform, this.materials.bone);
+					let right_arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(1.1, Math.abs(Math.PI/4 * m), -2.2 * m)).times(Mat4.rotation(Math.PI/2, 0, 0, -1)).times(Mat4.rotation(m * Math.PI/4, 0, 1 ,0));;
+					this.shapes.skeleton_arm_right.draw(context, program_state, right_arm_transform, this.materials.bone);
+				}
+				else {
+					let leg_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.15)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-0.5, 0, 0));
+					this.shapes.skeleton_leg_left.draw(context, program_state, leg_transform, this.materials.bone);
+					let right_leg_transform = leg_transform.times(Mat4.translation(1, 0, 0));
+					this.shapes.skeleton_leg_right.draw(context, program_state, right_leg_transform, this.materials.bone);
+					
+					let arm_transform = Mat4.identity();
+					if(enemy.attack_animation_timer >= 0) {
+						let m = -Math.sin(enemy.attack_animation_timer / 1000);
+						arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.10, 0.10, 0.10)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-1.5, Math.abs(Math.PI/4 * m), 3.5 * m)).times(Mat4.rotation(Math.PI/2, 0, 0, 1)).times(Mat4.rotation(m * Math.PI/4, 0, 1 ,0));
+						enemy.attack_animation_timer -= program_state.animation_delta_time;
+					} else {
+						arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-1.1, 0, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1));
+					}
+					
+					this.shapes.skeleton_sword_arm.draw(context, program_state, arm_transform, this.materials.bone);
+					let right_arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(1.1, 0, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, -1));
+					this.shapes.skeleton_arm_right.draw(context, program_state, right_arm_transform, this.materials.bone);
+				}
+			} else {
+				let enemy_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0));
+				this.shapes.skeleton_torso.draw(context, program_state, enemy_transform, this.materials.bone);
+			}
 		}
 
 		//this.shapes.teapot.draw(context, program_state, Mat4.identity().times(Mat4.translation(this.player_x +2 ,this.player_y + 2,0)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)), this.materials.dungeon_floor);
 		//this.shapes.goblin.draw(context, program_state, Mat4.identity().times(Mat4.translation(this.player_x -2 ,this.player_y - 2,0)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)), this.materials.dungeon_floor);
+		//this.shapes.skeleton.draw(context, program_state, Mat4.identity().times(Mat4.translation(this.player_x +1 ,this.player_y + 1,1)).times(Mat4.scale(0.3, 0.3, 0.3).times(Mat4.rotation(Math.PI/12, 1, 0, 0))), this.materials.bone);
+		//this.shapes.skeleton.draw(context, program_state, Mat4.identity().times(Mat4.translation(this.player_x +2 ,this.player_y + 2,1)).times(Mat4.scale(0.3, 0.3, 0.3).times(Mat4.rotation(Math.PI/2, 1, 0, 0))), this.materials.bone);
 
 		let camera = Mat4.look_at(vec3(this.player_x, this.player_y, 1), vec3(this.player_x + (5*Math.cos(this.player_angle_of_view)), this.player_y + (5*Math.sin(this.player_angle_of_view)), 1), vec3(0, 0, 1));
 		program_state.set_camera(camera);
+		
+		//display health bar
+		let hp_bar_scale_factor = this.player_health/this.player_max_health;
+		let hp_bar_translation_factor = (this.player_max_health-this.player_health) * 1;
+		let hp_bar_base_transform = Mat4.identity().times(Mat4.translation(this.player_x + 0.2 * Math.cos(this.player_angle_of_view), this.player_y + 0.2 * Math.sin(this.player_angle_of_view) , 1)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(this.player_angle_of_view - Math.PI/2, 0, 1, 0)).times(Mat4.translation(-0.13, 0.075, 0));
+		let hp_bar_transform = hp_bar_base_transform.times(Mat4.scale(0.015 * hp_bar_scale_factor, 0.005, 0.005));
+		let hp_bar_background_transform = hp_bar_base_transform.times(Mat4.translation(0, 0, -0.00001)).times(Mat4.scale(0.015, 0.005, 0.005));
+		this.shapes.square.draw(context, program_state, hp_bar_transform , this.materials.health_bar);
+		this.shapes.square.draw(context, program_state, hp_bar_background_transform , this.materials.health_bar_background);
+		
     }
 
 	
