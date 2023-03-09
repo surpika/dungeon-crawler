@@ -596,15 +596,18 @@ export class Assignment3 extends Scene {
 				this.projectiles.splice(i, 1);
 			}
 			
-			//enemy collision BUG: ARROW TENDS TO HIT ENEMY TWICE
-			for (let i = 0  ; i < map_width; i++) {
+			//enemy collision
+			for (let a = 0  ; a < map_width; a++) {
 				for( let j = 0; j < map_height; j++) {
-					for (let enemy of this.proc_gen.enemy_grid[i][j]) {
-						if(this.checkCirclesCollision(projectile_x, projectile_y, 0, enemy.x, enemy.y, enemy.radius)) {
-							console.log("shot enemy");
-							enemy.health = 0;
-							playSound("./assets/arrow_hit.mp3");
-							return;
+					for (let enemy of this.proc_gen.enemy_grid[a][j]) {
+						if(enemy.health > 0) {
+							if(this.checkCirclesCollision(projectile_x, projectile_y, 0, enemy.x, enemy.y, enemy.radius)) {
+								this.projectiles.splice(i, 1);
+								console.log("shot enemy");
+								enemy.health = 0;
+								playSound("./assets/arrow_hit.mp3");
+								return;
+							}
 						}
 					}
 				}
@@ -816,7 +819,6 @@ export class Assignment3 extends Scene {
 
 			// Perform enemy action
 			enemy.performAction(this.player_x, this.player_y);
-
 			// Check for collision with player
 			let collide = this.checkCirclesCollision(this.player_x, this.player_y, this.player_radius, enemy.x, enemy.y, enemy.radius);
 			if (collide) {
@@ -830,14 +832,14 @@ export class Assignment3 extends Scene {
 			enemies_around_this_enemy = enemies_around_this_enemy.filter(item => item !== enemy);
 
 			for (let close_enemy of enemies_around_this_enemy) {
-				collide = this.checkCirclesCollision(enemy.x, enemy.y, enemy.radius, close_enemy.x, close_enemy.y, close_enemy.radius);
-				if (collide) {
-					enemy.x = enemy.tick_initial_x;
-					enemy.y = enemy.tick_initial_y;
+				if(close_enemy.health > 0) {
+					collide = this.checkCirclesCollision(enemy.x, enemy.y, enemy.radius, close_enemy.x, close_enemy.y, close_enemy.radius);
+					if (collide) {
+						enemy.x = enemy.tick_initial_x;
+						enemy.y = enemy.tick_initial_y;
+					}
 				}
 			}
-			
-			
 		}
 	}
 
@@ -973,23 +975,33 @@ export class Assignment3 extends Scene {
 					this.shapes.skeleton_arm_right.draw(context, program_state, right_arm_transform, this.materials.bone);
 				}
 				else {
-					let leg_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.15)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-0.5, 0, 0));
-					this.shapes.skeleton_leg_left.draw(context, program_state, leg_transform, this.materials.bone);
-					let right_leg_transform = leg_transform.times(Mat4.translation(1, 0, 0));
-					this.shapes.skeleton_leg_right.draw(context, program_state, right_leg_transform, this.materials.bone);
-					
-					let arm_transform = Mat4.identity();
-					if(enemy.attack_animation_timer >= 0) {
-						let m = -Math.sin(enemy.attack_animation_timer / 1000);
-						arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.10, 0.10, 0.10)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-1.5, Math.abs(Math.PI/4 * m), 3.5 * m)).times(Mat4.rotation(Math.PI/2, 0, 0, 1)).times(Mat4.rotation(m * Math.PI/4, 0, 1 ,0));
-						enemy.attack_animation_timer -= program_state.animation_delta_time;
-					} else {
-						arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-1.1, 0, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1));
+					if(enemy.hit_timer > 0) {
+						let leg_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.15)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-0.5, 0, 0));
+						this.shapes.skeleton_leg_left.draw(context, program_state, leg_transform, this.materials.bone);
+						let right_leg_transform = leg_transform.times(Mat4.translation(1, 0, 0));
+						this.shapes.skeleton_leg_right.draw(context, program_state, right_leg_transform, this.materials.bone);
+						
+						let arm_transform = Mat4.identity();
 					}
-					
-					this.shapes.skeleton_sword_arm.draw(context, program_state, arm_transform, this.materials.bone);
-					let right_arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(1.1, 0, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, -1));
-					this.shapes.skeleton_arm_right.draw(context, program_state, right_arm_transform, this.materials.bone);
+					else {
+						let leg_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.15)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-0.5, 0, 0));
+						this.shapes.skeleton_leg_left.draw(context, program_state, leg_transform, this.materials.bone);
+						let right_leg_transform = leg_transform.times(Mat4.translation(1, 0, 0));
+						this.shapes.skeleton_leg_right.draw(context, program_state, right_leg_transform, this.materials.bone);
+						
+						let arm_transform = Mat4.identity();
+						if(enemy.attack_animation_timer >= 0) {
+							let m = -Math.sin(enemy.attack_animation_timer / 1000);
+							arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.10, 0.10, 0.10)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-1.5, Math.abs(Math.PI/4 * m), 3.5 * m)).times(Mat4.rotation(Math.PI/2, 0, 0, 1)).times(Mat4.rotation(m * Math.PI/4, 0, 1 ,0));
+							enemy.attack_animation_timer -= program_state.animation_delta_time;
+						} else {
+							arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-1.1, 0, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1));
+						}
+						
+						this.shapes.skeleton_sword_arm.draw(context, program_state, arm_transform, this.materials.bone);
+						let right_arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(1.1, 0, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, -1));
+						this.shapes.skeleton_arm_right.draw(context, program_state, right_arm_transform, this.materials.bone);
+					}
 				}
 			} else {
 				let enemy_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0));

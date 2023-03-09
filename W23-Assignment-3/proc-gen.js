@@ -3,8 +3,8 @@ import Enemy from "./enemy.js";
 const wall = 1;
 const empty = 0;
 
-const map_width = 30;
-const map_height = 30;
+const map_width = 15;
+const map_height = 15;
 const map_density = 0.5// minimum percentage of empty tiles
 const entropy = 0.5; // percent of time that snake will change direction.
 const enemy_density = 4.0/450.0//0.01;
