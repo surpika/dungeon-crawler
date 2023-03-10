@@ -7,14 +7,9 @@ Legend:
 Base Game::
 
 Display:
-1. Title Screen
-2. Show player health
-3. Show player score
 
 Environment:
-1. Textures on walls, floor, roof
 2. Place 1-3 stairwells/pits randomly for each new level (texture also)
-	-Larry: I think we could just have 1 stairwell. Also we could make an actual pit by adding squares just like normal walls below the map to represent the walls of the pit
 3. Torches on walls
 	-TODO first: figure out lighting
 4. Block light from shining through surfaces *

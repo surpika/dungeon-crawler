@@ -18,6 +18,12 @@ export class Assignment3 extends Scene {
 		
 		this.proc_gen = new Proc_Gen(this);
 
+		this.title_screen = true;
+		this.death_screen = false;
+		this.high_score = 0;
+
+		this.music_playing = false;
+
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
             torus: new defs.Torus(15, 15),
@@ -105,10 +111,6 @@ export class Assignment3 extends Scene {
 			time_to_next_fire: 0, // current time until another projectile can be fired
 			time_between_shots: 60, // minimum time until another projectile can be fired (60 -> 1 second)
 
-			
-
-			exit_tile_i: Math.floor(map_width / 2) - 1,
-			exit_tile_j: Math.floor(map_height / 2) + 1,
         }
         Object.assign(this, data_members);
 
@@ -126,17 +128,6 @@ export class Assignment3 extends Scene {
     }
 
     make_control_panel() {
-        // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
-        this.key_triggered_button("View solar system", ["Control", "0"], () => this.attached = () => null);
-        this.new_line();
-        this.key_triggered_button("Attach to planet 1", ["Control", "1"], () => this.attached = () => this.planet_1);
-        this.key_triggered_button("Attach to planet 2", ["Control", "2"], () => this.attached = () => this.planet_2);
-        this.new_line();
-        this.key_triggered_button("Attach to planet 3", ["Control", "3"], () => this.attached = () => this.planet_3);
-        this.key_triggered_button("Attach to planet 4", ["Control", "4"], () => this.attached = () => this.planet_4);
-        this.new_line();
-        this.key_triggered_button("Attach to moon", ["Control", "m"], () => this.attached = () => this.moon);
-
 		
 		this.key_triggered_button("Fire Projectile", [" "], () => {
 			if (this.time_to_next_fire <= 0) {
@@ -144,7 +135,7 @@ export class Assignment3 extends Scene {
 				this.projectiles.push(new_projectile);
 				//console.log(this.projectiles);
 				this.time_to_next_fire = this.time_between_shots
-				playSound("assets/arrow.mp3");
+				playSound("assets/arrow.mp3", false);
 			}
         });
 		
@@ -174,6 +165,23 @@ export class Assignment3 extends Scene {
 			//this.player_angle_of_view -= 10*(2*Math.PI / 180);
         }, undefined, () => {
             this.rotation_magnitude = 0;
+        });
+		this.key_triggered_button("Start Game", ["Enter"], () => {
+            if (this.title_screen) {
+				if (!this.music_playing) {
+					playSound("assets/dungeon-theme.mp3", true);
+					this.music_playing = true;
+				}
+				this.title_screen = false;
+				this.player_health = this.player_max_health;
+				this.startNewFloor();
+				this.player_score = 0;
+			} else if (this.player_health <= 0) {
+				this.title_screen = true;
+				this.player_heatlh = this.player_max_health;
+			}
+        }, undefined, () => {
+            
         });
     }
 
@@ -604,8 +612,11 @@ export class Assignment3 extends Scene {
 							if(this.checkCirclesCollision(projectile_x, projectile_y, 0, enemy.x, enemy.y, enemy.radius)) {
 								this.projectiles.splice(i, 1);
 								console.log("shot enemy");
-								enemy.health = 0;
-								playSound("./assets/arrow_hit.mp3");
+								enemy.health -= 1;
+								if (enemy.health <= 0) {
+									this.player_score += 5;
+								}
+								playSound("./assets/arrow_hit.mp3", false);
 								return;
 							}
 						}
@@ -634,7 +645,7 @@ export class Assignment3 extends Scene {
 	
 	startNewFloor() {
 		
-		this.score += 20; // Score increased by reaching new floor
+		this.player_score += 20; // Score increased by reaching new floor
 		this.current_floor += 1; // Current floor increased by one
 
 		// Reset player coordinates and other movement variables
@@ -650,19 +661,14 @@ export class Assignment3 extends Scene {
 		this.time_to_next_fire = 0; // current time until another projectile can be fired
 
 		// Generate new maze
-		// MIGHT WANT TO VERIFY WE DON'T HAVE TO DELETE PREVIOUS OBJECT
 		this.proc_gen = new Proc_Gen(this);
-
-		// Generate new exit tile
-		this.exit_tile_i = Math.floor(map_width / 2) - 1;
-		this.exit_tile_j = Math.floor(map_height / 2) + 1;
 	}
 	
 	checkIfExitReached() {
 		let player_tile_i = Math.floor((this.player_x + 1) / 2);
 		let player_tile_j = Math.floor((this.player_y + 1) / 2);
 
-		if (player_tile_i == this.exit_tile_i && player_tile_j == this.exit_tile_j) {
+		if (player_tile_i == this.proc_gen.exit_tile[0] && player_tile_j == this.proc_gen.exit_tile[1]) {
 			// Exit reached
 			this.startNewFloor()
 		}
@@ -864,14 +870,64 @@ export class Assignment3 extends Scene {
         // The parameters of the Light are: position, color, size
 		light_position = vec4(this.player_x, this.player_y, 1, 1);
         program_state.lights = [new Light(light_position, color(1, 0.6, 0.5, 1), 20)];
-		
-		if(this.player_health <= 0) {
-			//death text
-			let text_transform = Mat4.identity().times(Mat4.translation(this.player_x + 0.2 * Math.cos(this.player_angle_of_view), this.player_y + 0.2 * Math.sin(this.player_angle_of_view) , 1)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(this.player_angle_of_view - Math.PI/2, 0, 1, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
-			this.shapes.text_line.set_string("YOU DIED", context.context);
+
+
+		if (this.title_screen) {
+			let camera = Mat4.look_at(vec3(0,0,0), vec3(0, 1, 0), vec3(0, 0, 1));
+			program_state.set_camera(camera);
+
+			let text_transform = Mat4.identity().times(Mat4.translation(-.5, 1, .26)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.05, 0.05, 0.05));
+			this.shapes.text_line.set_string("Dungeon Crawler", context.context);
 			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.33, 1, .16)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.02, 0.02, 0.02));
+			this.shapes.text_line.set_string("Press \"enter\" to play", context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);	
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.1, 1, 0)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
+			this.shapes.text_line.set_string("Controls:", context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.3, 1, -.05)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
+			this.shapes.text_line.set_string("Left/Right Arrows = rotate player", context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.3, 1, -.1)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
+			this.shapes.text_line.set_string("Up/Down Arrows = move forwards/backwards", context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.3, 1, -.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
+			this.shapes.text_line.set_string("Space = fire arrow", context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.125, 1, -.25)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
+			this.shapes.text_line.set_string("High Score: " + this.high_score, context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+			
 			return;
 		}
+
+
+		if(this.player_health <= 0) {
+
+			this.high_score = Math.max(this.player_score, this.high_score);
+			
+			//death text
+			let camera = Mat4.look_at(vec3(0,0,0), vec3(0, 1, 0), vec3(0, 0, 1));
+			program_state.set_camera(camera);
+			
+			let text_transform = Mat4.identity().times(Mat4.translation(-.3, 1, .15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.05, 0.05, 0.05));
+			this.shapes.text_line.set_string("YOU DIED", context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.33, 1, -.1)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.03, 0.03, 0.03));
+			this.shapes.text_line.set_string("Final Score: " + this.player_score, context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+			
+			return;
+		}
+
 		
         // TODO:  Fill in matrix operations and drawing code to draw the solar system scene (Requirements 3 and 4)
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
@@ -887,7 +943,7 @@ export class Assignment3 extends Scene {
 			for(let j = 0; j < map_height; j++) {
 				let ij_transform = Mat4.identity().times(Mat4.translation(i*2, j*2, 0));
 				if(this.proc_gen.map[i][j] == 0) {
-					if (i == this.exit_tile_i && j == this.exit_tile_j) {
+					if (i == this.proc_gen.exit_tile[0] && j == this.proc_gen.exit_tile[1]) {
 						this.shapes.square.draw(context, program_state, ij_transform, this.materials.wood_door);
 					}
 					else {
@@ -1025,6 +1081,20 @@ export class Assignment3 extends Scene {
 		let hp_bar_background_transform = hp_bar_base_transform.times(Mat4.translation(0, 0, -0.00001)).times(Mat4.scale(0.015, 0.005, 0.005));
 		this.shapes.square.draw(context, program_state, hp_bar_transform , this.materials.health_bar);
 		this.shapes.square.draw(context, program_state, hp_bar_background_transform , this.materials.health_bar_background);
+
+		// display score
+		let text_transform = Mat4.identity().times(Mat4.translation(this.player_x + 0.2 * Math.cos(this.player_angle_of_view), this.player_y + 0.2 * Math.sin(this.player_angle_of_view) , 1)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(this.player_angle_of_view - Math.PI/2, 0, 1, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
+		text_transform = text_transform.times(Mat4.translation(-10.3,7.4,0));
+		text_transform = text_transform.times(Mat4.scale(.6,.6,0));
+		
+		
+		this.shapes.text_line.set_string("Score: " + this.player_score, context.context);
+		this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+
+		let cross_hair_transform = Mat4.identity().times(Mat4.translation(this.player_x + 0.2 * Math.cos(this.player_angle_of_view), this.player_y + 0.2 * Math.sin(this.player_angle_of_view) , 1));
+		cross_hair_transform = cross_hair_transform.times(Mat4.scale(0.001, 0.001, 0.001));
+		this.shapes.sphere.draw(context, program_state, cross_hair_transform , this.materials.health_bar);
 		
     }
 

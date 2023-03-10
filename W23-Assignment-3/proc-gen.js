@@ -140,6 +140,8 @@ const Proc_Gen =
 			this.create_spawn();
 			let directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 			this.snake_gen(Math.floor(map_width/2), Math.floor(map_height/2), 9, directions[Math.floor(Math.random()*directions.length)]);
+
+			this.exit_tile = this.empty_tiles[Math.floor(Math.random()*this.empty_tiles.length)];
 			
 			for(let i = 0; i < map_width; i++) {
 				let row = [];

@@ -1,8 +1,8 @@
 
 
-var playSound = function (path) {
+var playSound = function (path, loop) {
     var audio = new Audio(path);
-    audio.loop = false;
+    audio.loop = loop;
     audio.play(); 
 }
 
