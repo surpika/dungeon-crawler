@@ -110,7 +110,7 @@ export class Assignment3 extends Scene {
 			projectile_speed: 20,
 			time_to_next_fire: 0, // current time until another projectile can be fired
 			time_between_shots: 60, // minimum time until another projectile can be fired (60 -> 1 second)
-
+			level: 0
         }
         Object.assign(this, data_members);
 
@@ -140,14 +140,14 @@ export class Assignment3 extends Scene {
         });
 		
         this.key_triggered_button("Go up,", ["ArrowUp"], () => {
-            this.udSpeed = 3
+            this.udSpeed = 5;
             this.did_ud_move = true;
         }, undefined, () => {
             this.udSpeed = 0;
         });
         this.key_triggered_button("Go down,", ["ArrowDown"], () => {
 
-            this.udSpeed = -3
+            this.udSpeed = -5;
             this.did_ud_move = true;
         }, undefined, () => {
             this.udSpeed = 0;
@@ -662,6 +662,7 @@ export class Assignment3 extends Scene {
 
 
 		// Generate new maze
+		this.level += 1;
 		this.proc_gen = new Proc_Gen(this);
 	}
 	

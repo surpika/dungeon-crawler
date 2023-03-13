@@ -33,7 +33,7 @@ const Proc_Gen =
 			}
 			
 			let count = 0;
-			while (count < this.empty_tiles.length * enemy_density) {
+			while (count < this.empty_tiles.length * enemy_density + this.scene.level) {
 				let random_tile = this.empty_tiles[Math.floor(Math.random()*this.empty_tiles.length)];
 				let new_enemy = new Enemy(this.scene, this, random_tile[0] * 2, random_tile[1] * 2);
 				this.enemy_grid[random_tile[0]][random_tile[1]].push(new_enemy);
