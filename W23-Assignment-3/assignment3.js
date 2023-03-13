@@ -107,7 +107,7 @@ export class Assignment3 extends Scene {
 			player_max_health: 10,
 
 			projectiles: [], // [projectile_x, projectile_y, angle_of_direction]
-			projectile_speed: .3,
+			projectile_speed: 20,
 			time_to_next_fire: 0, // current time until another projectile can be fired
 			time_between_shots: 60, // minimum time until another projectile can be fired (60 -> 1 second)
 
@@ -140,28 +140,28 @@ export class Assignment3 extends Scene {
         });
 		
         this.key_triggered_button("Go up,", ["ArrowUp"], () => {
-            this.udSpeed = .1
+            this.udSpeed = 3
             this.did_ud_move = true;
         }, undefined, () => {
             this.udSpeed = 0;
         });
         this.key_triggered_button("Go down,", ["ArrowDown"], () => {
 
-            this.udSpeed = -0.1
+            this.udSpeed = -3
             this.did_ud_move = true;
         }, undefined, () => {
             this.udSpeed = 0;
         });
         this.key_triggered_button("Go Left,", ["ArrowLeft"], () => {
             this.angle = 2*Math.PI / 180;
-			this.rotation_magnitude = 1;
+			this.rotation_magnitude = 60;
 			//this.player_angle_of_view += 10*(2*Math.PI / 180);
         }, undefined, () => {
             this.rotation_magnitude = 0;
         });
         this.key_triggered_button("Go Right,", ["ArrowRight"], () => {
             this.angle = -(2*Math.PI / 180);
-			this.rotation_magnitude = -1;
+			this.rotation_magnitude = -60;
 			//this.player_angle_of_view -= 10*(2*Math.PI / 180);
         }, undefined, () => {
             this.rotation_magnitude = 0;
@@ -185,8 +185,8 @@ export class Assignment3 extends Scene {
         });
     }
 
-	rotate_player() {
-		this.player_angle_of_view += this.rotation_magnitude * (2*Math.PI / 180);
+	rotate_player(dt) {
+		this.player_angle_of_view += this.rotation_magnitude * dt * (2*Math.PI / 180);
 	}
 
     draw_cylinder(context, program_state, model_transform, box_color) {
@@ -217,12 +217,12 @@ export class Assignment3 extends Scene {
 
 
 
-	handlePlayerMovement() {
+	handlePlayerMovement(dt) {
 		let dx = this.udSpeed * Math.cos(this.player_angle_of_view);
 		let dy = this.udSpeed * Math.sin(this.player_angle_of_view);
 
-		this.player_x += dx;
-		this.player_y += dy;
+		this.player_x += dx * dt;
+		this.player_y += dy * dt;
 	}
 
 	printCollisionDebugOutput(player_tile_i, player_tile_j, walls_output) {
@@ -572,7 +572,7 @@ export class Assignment3 extends Scene {
 	}
 
 
-	handleProjectileMovement() {
+	handleProjectileMovement(dt) {
 		for (let i = 0; i < this.projectiles.length; i++) {
 			let projectile = this.projectiles[i];
 			let projectile_x = projectile[0];
@@ -580,8 +580,8 @@ export class Assignment3 extends Scene {
 			let projectile_angle = projectile[2];
 			let dx = this.projectile_speed * Math.cos(projectile_angle);
 			let dy = this.projectile_speed * Math.sin(projectile_angle);
-			let new_x = projectile_x + dx;
-			let new_y = projectile_y + dy;
+			let new_x = projectile_x + dx * dt;
+			let new_y = projectile_y + dy * dt;
 			this.projectiles[i] = [new_x, new_y, projectile_angle];
 		}
 	}
@@ -660,6 +660,7 @@ export class Assignment3 extends Scene {
 		this.projectiles = []; // [projectile_x, projectile_y, angle_of_direction]
 		this.time_to_next_fire = 0; // current time until another projectile can be fired
 
+
 		// Generate new maze
 		this.proc_gen = new Proc_Gen(this);
 	}
@@ -670,6 +671,7 @@ export class Assignment3 extends Scene {
 
 		if (player_tile_i == this.proc_gen.exit_tile[0] && player_tile_j == this.proc_gen.exit_tile[1]) {
 			// Exit reached
+			playSound('assets/door-3-open.mp3', false);
 			this.startNewFloor()
 		}
 	}
@@ -924,6 +926,10 @@ export class Assignment3 extends Scene {
 			text_transform = Mat4.identity().times(Mat4.translation(-.33, 1, -.1)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.03, 0.03, 0.03));
 			this.shapes.text_line.set_string("Final Score: " + this.player_score, context.context);
 			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.4, 1, -.28)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.02, 0.02, 0.02));
+			this.shapes.text_line.set_string("Press \"enter\" to continue " + this.player_score, context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
 			
 			return;
 		}
@@ -965,7 +971,6 @@ export class Assignment3 extends Scene {
 			}
 		}
 
-
         //let cylinderTransform = this.player_transform;
         //cylinderTransform = cylinderTransform.times(Mat4.translation(-cylinderTransform[0], -cylinderTransform[1], 0))
         //cylinderTransform = cylinderTransform.times(Mat4.scale(1,1, 1))
@@ -983,10 +988,10 @@ export class Assignment3 extends Scene {
 		this.tick_initial_player_x = this.player_x;
 		this.tick_initial_player_y = this.player_y;
 		
-		this.rotate_player();
+		this.rotate_player(dt);
 		
 		// Handle Player Movement
-		this.handlePlayerMovement();
+		this.handlePlayerMovement(dt);
 
 		// console.log("Player x: " + this.player_x);
 		// console.log("Player y: " + this.player_y);
@@ -1002,7 +1007,7 @@ export class Assignment3 extends Scene {
 			this.time_to_next_fire -= 1;
 		}
 
-		this.handleProjectileMovement();
+		this.handleProjectileMovement(dt);
 		this.handleProjectileCollision();
 		this.displayProjectiles(context, program_state);
 		
