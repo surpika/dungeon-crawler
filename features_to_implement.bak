@@ -9,9 +9,10 @@ Base Game::
 Display:
 
 Environment:
-1. Torches on walls
+2. Place 1-3 stairwells/pits randomly for each new level (texture also)
+3. Torches on walls
 	-TODO first: figure out lighting
-2. Block light from shining through surfaces *
+4. Block light from shining through surfaces *
 
 Player:
 1. Possibly add melee attack
