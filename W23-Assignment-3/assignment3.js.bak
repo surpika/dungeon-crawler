@@ -5,7 +5,7 @@ import {Shape_From_File} from "./examples/obj-file-demo.js";
 import Enemy from "./enemy.js";
 import playSound from './helpers.js';
 import Text_Line from './examples/text-demo.js';
-import Shadow_Demo from './examples/shadow-demo.js';
+import { Shadow_Demo } from './examples/shadow-demo.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
@@ -17,6 +17,12 @@ export class Assignment3 extends Scene {
         super();
 		
 		this.proc_gen = new Proc_Gen(this);
+
+		this.title_screen = true;
+		this.death_screen = false;
+		this.high_score = 0;
+
+		this.music_playing = false;
 
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
@@ -101,14 +107,10 @@ export class Assignment3 extends Scene {
 			player_max_health: 10,
 
 			projectiles: [], // [projectile_x, projectile_y, angle_of_direction]
-			projectile_speed: .3,
+			projectile_speed: 20,
 			time_to_next_fire: 0, // current time until another projectile can be fired
 			time_between_shots: 60, // minimum time until another projectile can be fired (60 -> 1 second)
-
-			
-
-			exit_tile_i: Math.floor(map_width / 2) - 1,
-			exit_tile_j: Math.floor(map_height / 2) + 1,
+			level: 0
         }
         Object.assign(this, data_members);
 
@@ -126,17 +128,6 @@ export class Assignment3 extends Scene {
     }
 
     make_control_panel() {
-        // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
-        this.key_triggered_button("View solar system", ["Control", "0"], () => this.attached = () => null);
-        this.new_line();
-        this.key_triggered_button("Attach to planet 1", ["Control", "1"], () => this.attached = () => this.planet_1);
-        this.key_triggered_button("Attach to planet 2", ["Control", "2"], () => this.attached = () => this.planet_2);
-        this.new_line();
-        this.key_triggered_button("Attach to planet 3", ["Control", "3"], () => this.attached = () => this.planet_3);
-        this.key_triggered_button("Attach to planet 4", ["Control", "4"], () => this.attached = () => this.planet_4);
-        this.new_line();
-        this.key_triggered_button("Attach to moon", ["Control", "m"], () => this.attached = () => this.moon);
-
 		
 		this.key_triggered_button("Fire Projectile", [" "], () => {
 			if (this.time_to_next_fire <= 0) {
@@ -144,41 +135,58 @@ export class Assignment3 extends Scene {
 				this.projectiles.push(new_projectile);
 				//console.log(this.projectiles);
 				this.time_to_next_fire = this.time_between_shots
-				playSound("assets/arrow.mp3");
+				playSound("assets/arrow.mp3", false);
 			}
         });
 		
         this.key_triggered_button("Go up,", ["ArrowUp"], () => {
-            this.udSpeed = .1
+            this.udSpeed = 5;
             this.did_ud_move = true;
         }, undefined, () => {
             this.udSpeed = 0;
         });
         this.key_triggered_button("Go down,", ["ArrowDown"], () => {
 
-            this.udSpeed = -0.1
+            this.udSpeed = -5;
             this.did_ud_move = true;
         }, undefined, () => {
             this.udSpeed = 0;
         });
         this.key_triggered_button("Go Left,", ["ArrowLeft"], () => {
             this.angle = 2*Math.PI / 180;
-			this.rotation_magnitude = 1;
+			this.rotation_magnitude = 60;
 			//this.player_angle_of_view += 10*(2*Math.PI / 180);
         }, undefined, () => {
             this.rotation_magnitude = 0;
         });
         this.key_triggered_button("Go Right,", ["ArrowRight"], () => {
             this.angle = -(2*Math.PI / 180);
-			this.rotation_magnitude = -1;
+			this.rotation_magnitude = -60;
 			//this.player_angle_of_view -= 10*(2*Math.PI / 180);
         }, undefined, () => {
             this.rotation_magnitude = 0;
         });
+		this.key_triggered_button("Start Game", ["Enter"], () => {
+            if (this.title_screen) {
+				if (!this.music_playing) {
+					playSound("assets/dungeon-theme.mp3", true);
+					this.music_playing = true;
+				}
+				this.title_screen = false;
+				this.player_health = this.player_max_health;
+				this.startNewFloor();
+				this.player_score = 0;
+			} else if (this.player_health <= 0) {
+				this.title_screen = true;
+				this.player_heatlh = this.player_max_health;
+			}
+        }, undefined, () => {
+            
+        });
     }
 
-	rotate_player() {
-		this.player_angle_of_view += this.rotation_magnitude * (2*Math.PI / 180);
+	rotate_player(dt) {
+		this.player_angle_of_view += this.rotation_magnitude * dt * (2*Math.PI / 180);
 	}
 
     draw_cylinder(context, program_state, model_transform, box_color) {
@@ -209,12 +217,12 @@ export class Assignment3 extends Scene {
 
 
 
-	handlePlayerMovement() {
+	handlePlayerMovement(dt) {
 		let dx = this.udSpeed * Math.cos(this.player_angle_of_view);
 		let dy = this.udSpeed * Math.sin(this.player_angle_of_view);
 
-		this.player_x += dx;
-		this.player_y += dy;
+		this.player_x += dx * dt;
+		this.player_y += dy * dt;
 	}
 
 	printCollisionDebugOutput(player_tile_i, player_tile_j, walls_output) {
@@ -564,7 +572,7 @@ export class Assignment3 extends Scene {
 	}
 
 
-	handleProjectileMovement() {
+	handleProjectileMovement(dt) {
 		for (let i = 0; i < this.projectiles.length; i++) {
 			let projectile = this.projectiles[i];
 			let projectile_x = projectile[0];
@@ -572,8 +580,8 @@ export class Assignment3 extends Scene {
 			let projectile_angle = projectile[2];
 			let dx = this.projectile_speed * Math.cos(projectile_angle);
 			let dy = this.projectile_speed * Math.sin(projectile_angle);
-			let new_x = projectile_x + dx;
-			let new_y = projectile_y + dy;
+			let new_x = projectile_x + dx * dt;
+			let new_y = projectile_y + dy * dt;
 			this.projectiles[i] = [new_x, new_y, projectile_angle];
 		}
 	}
@@ -596,15 +604,21 @@ export class Assignment3 extends Scene {
 				this.projectiles.splice(i, 1);
 			}
 			
-			//enemy collision BUG: ARROW TENDS TO HIT ENEMY TWICE
-			for (let i = 0  ; i < map_width; i++) {
+			//enemy collision
+			for (let a = 0  ; a < map_width; a++) {
 				for( let j = 0; j < map_height; j++) {
-					for (let enemy of this.proc_gen.enemy_grid[i][j]) {
-						if(this.checkCirclesCollision(projectile_x, projectile_y, 0, enemy.x, enemy.y, enemy.radius)) {
-							console.log("shot enemy");
-							enemy.health = 0;
-							playSound("./assets/arrow_hit.mp3");
-							return;
+					for (let enemy of this.proc_gen.enemy_grid[a][j]) {
+						if(enemy.health > 0) {
+							if(this.checkCirclesCollision(projectile_x, projectile_y, 0, enemy.x, enemy.y, enemy.radius)) {
+								this.projectiles.splice(i, 1);
+								console.log("shot enemy");
+								enemy.health -= 1;
+								if (enemy.health <= 0) {
+									this.player_score += 5;
+								}
+								playSound("./assets/arrow_hit.mp3", false);
+								return;
+							}
 						}
 					}
 				}
@@ -631,7 +645,7 @@ export class Assignment3 extends Scene {
 	
 	startNewFloor() {
 		
-		this.score += 20; // Score increased by reaching new floor
+		this.player_score += 20; // Score increased by reaching new floor
 		this.current_floor += 1; // Current floor increased by one
 
 		// Reset player coordinates and other movement variables
@@ -646,21 +660,19 @@ export class Assignment3 extends Scene {
 		this.projectiles = []; // [projectile_x, projectile_y, angle_of_direction]
 		this.time_to_next_fire = 0; // current time until another projectile can be fired
 
-		// Generate new maze
-		// MIGHT WANT TO VERIFY WE DON'T HAVE TO DELETE PREVIOUS OBJECT
-		this.proc_gen = new Proc_Gen(this);
 
-		// Generate new exit tile
-		this.exit_tile_i = Math.floor(map_width / 2) - 1;
-		this.exit_tile_j = Math.floor(map_height / 2) + 1;
+		// Generate new maze
+		this.level += 1;
+		this.proc_gen = new Proc_Gen(this);
 	}
 	
 	checkIfExitReached() {
 		let player_tile_i = Math.floor((this.player_x + 1) / 2);
 		let player_tile_j = Math.floor((this.player_y + 1) / 2);
 
-		if (player_tile_i == this.exit_tile_i && player_tile_j == this.exit_tile_j) {
+		if (player_tile_i == this.proc_gen.exit_tile[0] && player_tile_j == this.proc_gen.exit_tile[1]) {
 			// Exit reached
+			playSound('assets/door-3-open.mp3', false);
 			this.startNewFloor()
 		}
 	}
@@ -816,7 +828,6 @@ export class Assignment3 extends Scene {
 
 			// Perform enemy action
 			enemy.performAction(this.player_x, this.player_y);
-
 			// Check for collision with player
 			let collide = this.checkCirclesCollision(this.player_x, this.player_y, this.player_radius, enemy.x, enemy.y, enemy.radius);
 			if (collide) {
@@ -830,14 +841,14 @@ export class Assignment3 extends Scene {
 			enemies_around_this_enemy = enemies_around_this_enemy.filter(item => item !== enemy);
 
 			for (let close_enemy of enemies_around_this_enemy) {
-				collide = this.checkCirclesCollision(enemy.x, enemy.y, enemy.radius, close_enemy.x, close_enemy.y, close_enemy.radius);
-				if (collide) {
-					enemy.x = enemy.tick_initial_x;
-					enemy.y = enemy.tick_initial_y;
+				if(close_enemy.health > 0) {
+					collide = this.checkCirclesCollision(enemy.x, enemy.y, enemy.radius, close_enemy.x, close_enemy.y, close_enemy.radius);
+					if (collide) {
+						enemy.x = enemy.tick_initial_x;
+						enemy.y = enemy.tick_initial_y;
+					}
 				}
 			}
-			
-			
 		}
 	}
 
@@ -862,14 +873,68 @@ export class Assignment3 extends Scene {
         // The parameters of the Light are: position, color, size
 		light_position = vec4(this.player_x, this.player_y, 1, 1);
         program_state.lights = [new Light(light_position, color(1, 0.6, 0.5, 1), 20)];
-		
-		if(this.player_health <= 0) {
-			//death text
-			let text_transform = Mat4.identity().times(Mat4.translation(this.player_x + 0.2 * Math.cos(this.player_angle_of_view), this.player_y + 0.2 * Math.sin(this.player_angle_of_view) , 1)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(this.player_angle_of_view - Math.PI/2, 0, 1, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
-			this.shapes.text_line.set_string("YOU DIED", context.context);
+
+
+		if (this.title_screen) {
+			let camera = Mat4.look_at(vec3(0,0,0), vec3(0, 1, 0), vec3(0, 0, 1));
+			program_state.set_camera(camera);
+
+			let text_transform = Mat4.identity().times(Mat4.translation(-.5, 1, .26)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.05, 0.05, 0.05));
+			this.shapes.text_line.set_string("Dungeon Crawler", context.context);
 			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.33, 1, .16)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.02, 0.02, 0.02));
+			this.shapes.text_line.set_string("Press \"enter\" to play", context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);	
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.1, 1, 0)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
+			this.shapes.text_line.set_string("Controls:", context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.3, 1, -.05)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
+			this.shapes.text_line.set_string("Left/Right Arrows = rotate player", context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.3, 1, -.1)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
+			this.shapes.text_line.set_string("Up/Down Arrows = move forwards/backwards", context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.3, 1, -.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
+			this.shapes.text_line.set_string("Space = fire arrow", context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.125, 1, -.25)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
+			this.shapes.text_line.set_string("High Score: " + this.high_score, context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+			
 			return;
 		}
+
+
+		if(this.player_health <= 0) {
+
+			this.high_score = Math.max(this.player_score, this.high_score);
+			
+			//death text
+			let camera = Mat4.look_at(vec3(0,0,0), vec3(0, 1, 0), vec3(0, 0, 1));
+			program_state.set_camera(camera);
+			
+			let text_transform = Mat4.identity().times(Mat4.translation(-.3, 1, .15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.05, 0.05, 0.05));
+			this.shapes.text_line.set_string("YOU DIED", context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.33, 1, -.1)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.03, 0.03, 0.03));
+			this.shapes.text_line.set_string("Final Score: " + this.player_score, context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+			text_transform = Mat4.identity().times(Mat4.translation(-.4, 1, -.28)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.02, 0.02, 0.02));
+			this.shapes.text_line.set_string("Press \"enter\" to continue " + this.player_score, context.context);
+			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+			
+			return;
+		}
+
 		
         // TODO:  Fill in matrix operations and drawing code to draw the solar system scene (Requirements 3 and 4)
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
@@ -885,7 +950,7 @@ export class Assignment3 extends Scene {
 			for(let j = 0; j < map_height; j++) {
 				let ij_transform = Mat4.identity().times(Mat4.translation(i*2, j*2, 0));
 				if(this.proc_gen.map[i][j] == 0) {
-					if (i == this.exit_tile_i && j == this.exit_tile_j) {
+					if (i == this.proc_gen.exit_tile[0] && j == this.proc_gen.exit_tile[1]) {
 						this.shapes.square.draw(context, program_state, ij_transform, this.materials.wood_door);
 					}
 					else {
@@ -907,7 +972,6 @@ export class Assignment3 extends Scene {
 			}
 		}
 
-
         //let cylinderTransform = this.player_transform;
         //cylinderTransform = cylinderTransform.times(Mat4.translation(-cylinderTransform[0], -cylinderTransform[1], 0))
         //cylinderTransform = cylinderTransform.times(Mat4.scale(1,1, 1))
@@ -925,10 +989,10 @@ export class Assignment3 extends Scene {
 		this.tick_initial_player_x = this.player_x;
 		this.tick_initial_player_y = this.player_y;
 		
-		this.rotate_player();
+		this.rotate_player(dt);
 		
 		// Handle Player Movement
-		this.handlePlayerMovement();
+		this.handlePlayerMovement(dt);
 
 		// console.log("Player x: " + this.player_x);
 		// console.log("Player y: " + this.player_y);
@@ -944,7 +1008,7 @@ export class Assignment3 extends Scene {
 			this.time_to_next_fire -= 1;
 		}
 
-		this.handleProjectileMovement();
+		this.handleProjectileMovement(dt);
 		this.handleProjectileCollision();
 		this.displayProjectiles(context, program_state);
 		
@@ -973,23 +1037,33 @@ export class Assignment3 extends Scene {
 					this.shapes.skeleton_arm_right.draw(context, program_state, right_arm_transform, this.materials.bone);
 				}
 				else {
-					let leg_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.15)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-0.5, 0, 0));
-					this.shapes.skeleton_leg_left.draw(context, program_state, leg_transform, this.materials.bone);
-					let right_leg_transform = leg_transform.times(Mat4.translation(1, 0, 0));
-					this.shapes.skeleton_leg_right.draw(context, program_state, right_leg_transform, this.materials.bone);
-					
-					let arm_transform = Mat4.identity();
-					if(enemy.attack_animation_timer >= 0) {
-						let m = -Math.sin(enemy.attack_animation_timer / 1000);
-						arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.10, 0.10, 0.10)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-1.5, Math.abs(Math.PI/4 * m), 3.5 * m)).times(Mat4.rotation(Math.PI/2, 0, 0, 1)).times(Mat4.rotation(m * Math.PI/4, 0, 1 ,0));
-						enemy.attack_animation_timer -= program_state.animation_delta_time;
-					} else {
-						arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-1.1, 0, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1));
+					if(enemy.hit_timer > 0) {
+						let leg_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.15)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-0.5, 0, 0));
+						this.shapes.skeleton_leg_left.draw(context, program_state, leg_transform, this.materials.bone);
+						let right_leg_transform = leg_transform.times(Mat4.translation(1, 0, 0));
+						this.shapes.skeleton_leg_right.draw(context, program_state, right_leg_transform, this.materials.bone);
+						
+						let arm_transform = Mat4.identity();
 					}
-					
-					this.shapes.skeleton_sword_arm.draw(context, program_state, arm_transform, this.materials.bone);
-					let right_arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(1.1, 0, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, -1));
-					this.shapes.skeleton_arm_right.draw(context, program_state, right_arm_transform, this.materials.bone);
+					else {
+						let leg_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.15)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-0.5, 0, 0));
+						this.shapes.skeleton_leg_left.draw(context, program_state, leg_transform, this.materials.bone);
+						let right_leg_transform = leg_transform.times(Mat4.translation(1, 0, 0));
+						this.shapes.skeleton_leg_right.draw(context, program_state, right_leg_transform, this.materials.bone);
+						
+						let arm_transform = Mat4.identity();
+						if(enemy.attack_animation_timer >= 0) {
+							let m = -Math.sin(enemy.attack_animation_timer / 1000);
+							arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.10, 0.10, 0.10)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-1.5, Math.abs(Math.PI/4 * m), 3.5 * m)).times(Mat4.rotation(Math.PI/2, 0, 0, 1)).times(Mat4.rotation(m * Math.PI/4, 0, 1 ,0));
+							enemy.attack_animation_timer -= program_state.animation_delta_time;
+						} else {
+							arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(-1.1, 0, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1));
+						}
+						
+						this.shapes.skeleton_sword_arm.draw(context, program_state, arm_transform, this.materials.bone);
+						let right_arm_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0.6)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0)).times(Mat4.translation(1.1, 0, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, -1));
+						this.shapes.skeleton_arm_right.draw(context, program_state, right_arm_transform, this.materials.bone);
+					}
 				}
 			} else {
 				let enemy_transform = Mat4.identity().times(Mat4.translation(enemy.x, enemy.y, 0)).times(Mat4.scale(0.15, 0.15, 0.15)).times(Mat4.rotation(enemy.angle_of_view + Math.PI/2, 0, 1, 0));
@@ -1013,6 +1087,20 @@ export class Assignment3 extends Scene {
 		let hp_bar_background_transform = hp_bar_base_transform.times(Mat4.translation(0, 0, -0.00001)).times(Mat4.scale(0.015, 0.005, 0.005));
 		this.shapes.square.draw(context, program_state, hp_bar_transform , this.materials.health_bar);
 		this.shapes.square.draw(context, program_state, hp_bar_background_transform , this.materials.health_bar_background);
+
+		// display score
+		let text_transform = Mat4.identity().times(Mat4.translation(this.player_x + 0.2 * Math.cos(this.player_angle_of_view), this.player_y + 0.2 * Math.sin(this.player_angle_of_view) , 1)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.rotation(this.player_angle_of_view - Math.PI/2, 0, 1, 0)).times(Mat4.scale(0.01, 0.01, 0.01));
+		text_transform = text_transform.times(Mat4.translation(-10.3,7.4,0));
+		text_transform = text_transform.times(Mat4.scale(.6,.6,0));
+		
+		
+		this.shapes.text_line.set_string("Score: " + this.player_score, context.context);
+		this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
+
+
+		let cross_hair_transform = Mat4.identity().times(Mat4.translation(this.player_x + 0.2 * Math.cos(this.player_angle_of_view), this.player_y + 0.2 * Math.sin(this.player_angle_of_view) , 1));
+		cross_hair_transform = cross_hair_transform.times(Mat4.scale(0.001, 0.001, 0.001));
+		this.shapes.sphere.draw(context, program_state, cross_hair_transform , this.materials.health_bar);
 		
     }
 

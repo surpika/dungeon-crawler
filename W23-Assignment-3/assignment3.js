@@ -929,7 +929,7 @@ export class Assignment3 extends Scene {
 			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
 
 			text_transform = Mat4.identity().times(Mat4.translation(-.4, 1, -.28)).times(Mat4.rotation(Math.PI/2, 1, 0, 0)).times(Mat4.scale(0.02, 0.02, 0.02));
-			this.shapes.text_line.set_string("Press \"enter\" to continue " + this.player_score, context.context);
+			this.shapes.text_line.set_string("Press \"enter\" to continue ", context.context);
 			this.shapes.text_line.draw(context, program_state, text_transform, this.materials.text_image);
 			
 			return;
